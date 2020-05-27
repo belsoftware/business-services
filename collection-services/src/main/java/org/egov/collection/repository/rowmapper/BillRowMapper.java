@@ -14,7 +14,7 @@ import java.util.Objects;
 
 import org.egov.collection.model.AuditDetails;
 import org.egov.collection.web.contract.Bill;
-import org.egov.collection.web.contract.Bill.StatusEnum;
+import org.egov.collection.web.contract.Bill.BillStatusEnum;
 import org.egov.collection.web.contract.BillAccountDetail;
 import org.egov.tracer.model.CustomException;
 import org.postgresql.util.PGobject;
@@ -52,7 +52,7 @@ public class BillRowMapper implements ResultSetExtractor<List<Bill>> {
 				auditDetails.setLastModifiedTime((Long) rs.getObject("b_lastmodifiedtime"));
 
 				bill = Bill.builder().id(billId).totalAmount(BigDecimal.ZERO).tenantId(rs.getString("b_tenantid"))
-						.status(StatusEnum.fromValue(rs.getString("b_status")))
+						.status(BillStatusEnum.fromValue(rs.getString("b_status")))
 						.businessService(rs.getString("b_businessService"))
 						.billNumber(rs.getString("b_billnumber"))
 						.billDate(rs.getLong("b_billdate"))

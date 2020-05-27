@@ -5,8 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>1.5.22.RELEASE</version>
-    <relativePath></relativePath>
+    <version>2.2.6.RELEASE</version>
   </parent>
   <groupId>com.egov.demand</groupId>
   <artifactId>billing-service</artifactId>
@@ -89,7 +88,7 @@
     <dependency>
       <groupId>org.egov.services</groupId>
       <artifactId>tracer</artifactId>
-      <version>1.1.5-SNAPSHOT</version>
+      <version>2.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.flywaydb</groupId>
@@ -105,6 +104,61 @@
   </repositories>
   <build>
     <plugins>
+      <plugin>
+        <groupId>cz.habarta.typescript-generator</groupId>
+        <artifactId>typescript-generator-maven-plugin</artifactId>
+        <version>2.22.595</version>
+        <executions>
+          <execution>
+            <id>generate</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+        <configuration>
+
+          <jsonLibrary>jackson2</jsonLibrary>
+          <classes>
+            <class>org.egov.demand.model.Demand$StatusEnum</class>
+            <class>org.egov.demand.model.BillDetail$StatusEnum</class>
+            <class>org.egov.demand.web.contract.DemandRequest</class>
+            <class>org.egov.demand.web.contract.DemandResponse</class>
+            <class>org.egov.demand.model.DemandCriteria</class>
+            <class>org.egov.demand.model.BillSearchCriteria</class>
+            <class>org.egov.demand.model.GenerateBillCriteria</class>
+            <class>org.egov.demand.web.contract.BillResponse</class>
+            <class>org.egov.demand.web.contract.BusinessServiceDetailCriteria</class>
+            <class>org.egov.demand.web.contract.BusinessServiceDetailResponse</class>
+            <class>org.egov.demand.model.TaxHeadMasterCriteria</class>
+            <class>org.egov.demand.web.contract.TaxHeadMasterResponse</class>
+            <class>org.egov.demand.web.contract.TaxPeriodCriteria</class>
+            <class>org.egov.demand.web.contract.TaxPeriodResponse</class>
+          </classes>
+          <customTypeNaming>
+            <typeNaming>org.egov.demand.model.Demand$StatusEnum:DemandStatus</typeNaming>
+            <typeNaming>org.egov.demand.model.BillDetail$StatusEnum:BillDetailStatus</typeNaming>
+            <typeNaming>org.egov.demand.model.BillDetail$StatusEnum:BillDetailStatus</typeNaming>
+            <typeNaming>org.egov.demand.model.enums.Type:DemandType</typeNaming>
+            <typeNaming>org.egov.demand.model.enums.Status:CollectionReceiptStatus</typeNaming>
+            <typeNaming>org.egov.demand.model.enums.Category:TaxHeadCategory</typeNaming>
+            <typeNaming>org.egov.demand.model.BillAccountDetail$PurposeEnum:BillPurposeEnum</typeNaming>
+            <typeNaming>org.egov.demand.model.enums.PeriodCycle:TaxPeriodCycle</typeNaming>
+          </customTypeNaming>
+          <customTypeMappings>
+            <customTypeMapping>org.egov.demand.model.AuditDetail:AuditDetails</customTypeMapping>
+            <customTypeMapping>org.egov.demand.model.AuditDetails:AuditDetails</customTypeMapping>
+            <customTypeMapping>org.egov.common.contract.request.User:User</customTypeMapping>
+            <customTypeMapping>org.egov.demand.web.contract.User:User</customTypeMapping>
+            <customTypeMapping>org.egov.common.contract.request.RequestInfo:RequestInfo</customTypeMapping>
+            <customTypeMapping>org.egov.common.contract.response.ResponseInfo:ResponseInfo</customTypeMapping>
+          </customTypeMappings>
+          <namespace>Digit</namespace>
+          <debug>true</debug>
+          <outputKind>module</outputKind>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

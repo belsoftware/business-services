@@ -197,7 +197,7 @@ public class PaymentRowMapper implements ResultSetExtractor<List<Payment>> {
 
 
             Bill bill = Bill.builder().id(rs.getString("bill_id"))
-            .status(Bill.StatusEnum.fromValue(rs.getString("bill_status")))
+            .status(Bill.BillStatusEnum.fromValue(rs.getString("bill_status")))
             .isCancelled(rs.getBoolean("iscancelled"))
             .tenantId(rs.getString("bill_tenantid"))
             .collectionModesNotAllowed(collectionModesAllowedList)

@@ -68,7 +68,7 @@ public class BusinessServDetailService {
 			final BusinessServiceDetailCriteria businessServiceDetailCriteria, final RequestInfo requestInfo) {
 		
 		final List<BusinessServiceDetail> businessServiceDetails = businessServiceDetailRepository
-				.getBussinessServiceDetail(requestInfo,businessServiceDetailCriteria);
+				.getBusinessServiceDetail(requestInfo,businessServiceDetailCriteria);
 		return getBusinessServiceDetailResponse(businessServiceDetails, requestInfo);
 	}
 

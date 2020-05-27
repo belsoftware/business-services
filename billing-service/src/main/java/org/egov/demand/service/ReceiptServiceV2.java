@@ -95,9 +95,9 @@ public class ReceiptServiceV2 {
 	 * @param demandIdMap
 	 * @param billDetail
 	 */
-	private void updateDemandFromBillDetail(BillDetailV2 billDetail, Demand demand, Boolean isRecieptCancellation) {
+	private void updateDemandFromBillDetail(BillDetailV2 billDetail, Demand demand, Boolean isReceiptCancellation) {
 
-		Map<String, List<DemandDetail>> taxHeadCodeDemandDetailgroup = demand.getDemandDetails().stream()
+		Map<String, List<DemandDetail>> taxHeadCodeDemandDetailGroup = demand.getDemandDetails().stream()
 				.collect(Collectors.groupingBy(DemandDetail::getTaxHeadMasterCode));
 
 		for (BillAccountDetailV2 billAccDetail : billDetail.getBillAccountDetails()) {
@@ -107,7 +107,7 @@ public class ReceiptServiceV2 {
 			 */ 
 			if(null == billAccDetail.getTaxHeadCode()) return;
 			
-			List<DemandDetail> currentDetails = taxHeadCodeDemandDetailgroup.get(billAccDetail.getTaxHeadCode());
+			List<DemandDetail> currentDetails = taxHeadCodeDemandDetailGroup.get(billAccDetail.getTaxHeadCode());
 					
 			int length = 0;
 			
@@ -121,14 +121,14 @@ public class ReceiptServiceV2 {
 			 */
 			if (length == 1) {
 
-				updateSingleDemandDetail(currentDetails.get(0), billAccDetail, isRecieptCancellation);
+				updateSingleDemandDetail(currentDetails.get(0), billAccDetail, isReceiptCancellation);
 			}
 			/*
 			 * if multiple demandDetails point to one BillAccountDetial
 			 */
 			else if (length > 1) {
 
-				updateMultipleDemandDetails(currentDetails, billAccDetail, isRecieptCancellation);
+				updateMultipleDemandDetails(currentDetails, billAccDetail, isReceiptCancellation);
 			} else {
 
 				/*

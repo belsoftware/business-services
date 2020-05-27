@@ -216,7 +216,7 @@ public class DemandValidatorV1 {
 	 * @param taxHeadMap
 	 * @param detail
 	 */
-	private void alterDebitTaxToNegativeInCaseOfPositve(Map<String, TaxHeadMaster> taxHeadMap, DemandDetail detail) {
+	private void alterDebitTaxToNegativeInCaseOfPositive(Map<String, TaxHeadMaster> taxHeadMap, DemandDetail detail) {
 		/*
 		 * setting tax amount to negative in case of debit tax-head and positive tax
 		 * value

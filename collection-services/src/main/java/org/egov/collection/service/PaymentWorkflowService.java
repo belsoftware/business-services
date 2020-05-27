@@ -142,7 +142,7 @@ public class PaymentWorkflowService {
             payment.setPaymentStatus(PaymentStatusEnum.CANCELLED);
             payment.getPaymentDetails().forEach(paymentDetail -> {
                 Bill bill = paymentDetail.getBill();
-                bill.setStatus(Bill.StatusEnum.CANCELLED);
+                bill.setStatus(Bill.BillStatusEnum.CANCELLED);
                 bill.setIsCancelled(true);
                 bill.setReasonForCancellation(workflowRequestByPaymentId.get(payment.getId()).getReason());
                 bill.setAdditionalDetails(jsonMerge(bill.getAdditionalDetails(),
@@ -194,7 +194,7 @@ public class PaymentWorkflowService {
 
             payment.getPaymentDetails().forEach(paymentDetail -> {
                 Bill bill = paymentDetail.getBill();
-                bill.setStatus(Bill.StatusEnum.CANCELLED);
+                bill.setStatus(Bill.BillStatusEnum.CANCELLED);
                 bill.setReasonForCancellation(workflowRequestByPaymentId.get(payment.getId()).getReason());
                 bill.setAdditionalDetails(jsonMerge(bill.getAdditionalDetails(),
                         workflowRequestByPaymentId.get(payment.getId()).getAdditionalDetails()));

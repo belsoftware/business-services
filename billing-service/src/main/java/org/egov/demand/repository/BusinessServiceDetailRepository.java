@@ -105,12 +105,12 @@ public class BusinessServiceDetailRepository {
 
 
     /**
-     * Fetches the BussinessServiceDetail based on search criteria
+     * Fetches the BusinessServiceDetail based on search criteria
      * @param requestInfo The requestInfo of the search request
-     * @param BusinessServiceDetailsCriteria The search criteria for BussinessServiceDetailBussinessServiceDetail
-     * @return List of BussinessServiceDetail
+     * @param BusinessServiceDetailsCriteria The search criteria for BusinessServiceDetailBusinessServiceDetail
+     * @return List of BusinessServiceDetail
      */
-    public List<BusinessServiceDetail> getBussinessServiceDetail(RequestInfo requestInfo,BusinessServiceDetailCriteria BusinessServiceDetailsCriteria){
+    public List<BusinessServiceDetail> getBusinessServiceDetail(RequestInfo requestInfo, BusinessServiceDetailCriteria BusinessServiceDetailsCriteria){
 
         MdmsCriteriaReq mdmsCriteriaReq = util.prepareMdMsRequest(BusinessServiceDetailsCriteria.getTenantId(),
                 MODULE_NAME, Collections.singletonList(BUSINESSSERVICE_MASTERNAME), null,

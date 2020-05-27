@@ -93,7 +93,7 @@ public class PaymentController {
 
 		/*
 		 * Only Applicable if there is no receipt number search
-		 * Only Apllicable when search ignore status has been defined in application properties
+		 * Only Applicable when search ignore status has been defined in application properties
 		 * Only Applicable when status has not been already provided for the search
 		 */
         if ((CollectionUtils.isEmpty(paymentSearchCriteria.getReceiptNumbers()))
