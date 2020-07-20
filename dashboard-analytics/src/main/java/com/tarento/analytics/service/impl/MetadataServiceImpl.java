@@ -57,7 +57,7 @@ public class MetadataServiceImpl implements MetadataService {
 	public ArrayNode getDashboardConfiguration(String dashboardId, String catagory, List<RoleDto> roleIds) throws AINException, IOException {
 
 		Calendar cal = Calendar.getInstance();
-		cal.set(cal.getWeekYear()-1, Calendar.APRIL, 1);
+		cal.set(cal.getWeekYear(), Calendar.APRIL, 1);
 		Date startDate = cal.getTime();
 		Date endDate = new Date();
 
