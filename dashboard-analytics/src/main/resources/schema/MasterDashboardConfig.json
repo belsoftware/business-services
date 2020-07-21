@@ -644,7 +644,7 @@
               "isCollapsible": true,
               "charts": [
                 {
-                  "id": "tlStatusByDDR",
+                  "id": "tlStatusByDDR2",
                   "name": "",
                   "code": "",
                   "chartType": "table",
@@ -652,6 +652,88 @@
                   "headers": [],
                   "tabName": "Boundary"
 
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DSS_M_COLLECT_DASHBOARD",
+      "id": "mCollect",
+      "isActive": "",
+      "style": "linear",
+      "visualizations": [
+        {
+          "row": 1,
+          "name": "DSS_REVENUE",
+          "vizArray": [
+            {
+              "id": 311,
+              "name": "DSS_OVERVIEW",
+              "dimensions": {
+                "height": 350,
+                "width": 5
+              },
+              "vizType": "metric-collection",
+              "label": "DSS_OVERVIEW",
+              "noUnit": true,
+              "isCollapsible": false,
+              "charts": [
+                {
+                  "id": "todaysCollectionv2",
+                  "name": "DSS_TOTAL_COLLECTION_TODAY",
+                  "code": "",
+                  "chartType": "metric",
+                  "filter": {"title": "TODAY"},
+                  "headers": []
+                },
+                {
+                  "id": "totalCollectionv2",
+                  "name": "DSS_TOTAL_COLLECTION",
+                  "code": "",
+                  "chartType": "metric",
+                  "filter": "",
+                  "headers": []
+                },
+                {
+                  "id": "targetCollection",
+                  "name": "DSS_TARGET_COLLECTION",
+                  "code": "",
+                  "chartType": "metric",
+                  "filter": "",
+                  "headers": []
+                },
+                {
+                  "id": "mcTargetAchievedv2",
+                  "name": "DSS_TARGET_ACHIEVED",
+                  "code": "",
+                  "chartType": "metric",
+                  "filter": "",
+                  "headers": []
+                }
+              ]
+            },
+            {
+              "id": 312,
+              "name": "Total Cumulative Collection",
+              "dimensions": {
+                "height": 350,
+                "width": 7
+              },
+              "vizType": "chart",
+              "label": "",
+              "noUnit": true,
+              "isCollapsible": false,
+              "charts": [
+                {
+                  "id": "mcCumulativeCollectionv2",
+                  "name": "Monthly",
+                  "code": "",
+                  "chartType": "line",
+                  "filter": "",
+                  "headers": []
                 }
               ]
             }
@@ -966,7 +1048,7 @@
               },
               "charts": [
                 {
-                  "id": "totalCollectionv2",
+                  "id": "overviewTotalCollectionv2",
                   "name": "DSS_TOTAL_COLLECTION",
                   "code": "",
                   "chartType": "metric",
@@ -1007,30 +1089,19 @@
           "vizArray": [
             {
               "id": 121,
-              "name": "DSS_PROPERTY_TAX",
+              "name": "DSS_M_COLLECT",
               "vizType": "module",
-              "moduleLevel": "PT",
-              "type": "",
-              "noUnit": false,
-              "isCollapsible": false,
+              "moduleLevel": "TL",
               "ref": {
-                "url": "propertytax",
+                "url": "mCollect",
                 "logoUrl": "",
                 "type": "internal"
               },
               "label": "",
               "charts": [
                 {
-                  "id": "totalCollectionv2",
+                  "id": "UCtotalCollectionv2",
                   "name": "DSS_TOTAL_COLLECTION",
-                  "code": "",
-                  "chartType": "metric",
-                  "filter": "",
-                  "headers": []
-                },
-                {
-                  "id": "propertiesAssessed",
-                  "name": "DSS_PT_TOTAL_PROPERTIES_ASSESSED",
                   "code": "",
                   "chartType": "metric",
                   "filter": "",
@@ -1061,66 +1132,6 @@
                 {
                   "id": "totalApplication",
                   "name": "DSS_TOTAL_APPLICATION",
-                  "code": "",
-                  "chartType": "metric",
-                  "filter": "",
-                  "headers": []
-                }
-              ]
-            },
-            {
-              "id": 141,
-              "name": "DSS_COMPLAINS",
-              "vizType": "module",
-              "moduleLevel": "PGR",
-              "ref": {
-                "url": "pgr",
-                "logoUrl": "",
-                "type": "internal"
-              },
-              "label": "",
-              "charts": [
-                {
-                  "id": "totalComplaints",
-                  "name": "DSS_PGR_TOTAL_COMPLAINTS",
-                  "code": "",
-                  "chartType": "metric",
-                  "filter": "",
-                  "headers": []
-                },
-                {
-                  "id": "slaAchieved",
-                  "name": "DSS_SLA_ACHIEVED",
-                  "code": "",
-                  "chartType": "metric",
-                  "filter": "",
-                  "headers": []
-                }
-              ]
-            },
-            {
-              "id": 142,
-              "name": "DSS_WATER_SEWERAGE",
-              "vizType": "module",
-              "moduleLevel": "W&S",
-              "ref": {
-                "url": "ws",
-                "logoUrl": "",
-                "type": "internal"
-              },
-              "label": "",
-              "charts": [
-                {
-                  "id": "wstotalCollection",
-                  "name": "DSS_WS_TOTAL_COLLECTION",
-                  "code": "",
-                  "chartType": "metric",
-                  "filter": "",
-                  "headers": []
-                },
-                {
-                  "id": "wstotalConnection",
-                  "name": "DSS_WS_TOTAL_CONNECTIONS",
                   "code": "",
                   "chartType": "metric",
                   "filter": "",
@@ -1478,22 +1489,6 @@
                 {
                   "id": "propertiesByUsageType",
                   "name": "DSS_PT_PROPERTIES_BY_USAGE_TYPE",
-                  "code": "",
-                  "chartType": "donut",
-                  "filter": "",
-                  "headers": []
-                }
-              ]
-            },
-            {
-              "id": 254,
-              "name": "DSS_PT_PROPERTIES_BY_TENANT",
-              "vizType": "chart",
-              "isCollapsible": false,
-              "charts": [
-                {
-                  "id": "propertiesByTenant",
-                  "name": "DSS_PT_PROPERTIES_BY_TENANT",
                   "code": "",
                   "chartType": "donut",
                   "filter": "",
@@ -2561,7 +2556,7 @@
               "isCollapsible": true,
               "charts": [
                 {
-                  "id": "tlStatusByDDR",
+                  "id": "tlStatusByDDR2",
                   "name": "",
                   "code": "",
                   "chartType": "table",
@@ -2601,7 +2596,7 @@
                   "headers": []
                 },
                 {
-                  "id": "totalCollectionv2",
+                  "id": "overviewTotalCollectionv2",
                   "name": "DSS_TOTAL_COLLECTION",
                   "code": "",
                   "chartType": "metric",
@@ -2884,7 +2879,7 @@
               },
               "charts": [
                 {
-                  "id": "totalCollectionv2",
+                  "id": "overviewTotalCollectionv2",
                   "name": "DSS_TOTAL_COLLECTION",
                   "code": "",
                   "chartType": "metric",
@@ -2927,7 +2922,7 @@
               "id": 121,
               "name": "DSS_PROPERTY_TAX",
               "vizType": "module",
-              "moduleLevel": "PT",
+              "moduleLevel": "TL",
               "type": "",
               "noUnit": false,
               "isCollapsible": false,
@@ -2939,7 +2934,7 @@
               "label": "",
               "charts": [
                 {
-                  "id": "totalCollectionv2",
+                  "id": "overviewTotalCollectionv2",
                   "name": "DSS_TOTAL_COLLECTION",
                   "code": "",
                   "chartType": "metric",

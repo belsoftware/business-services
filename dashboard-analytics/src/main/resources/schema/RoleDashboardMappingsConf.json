@@ -3,7 +3,7 @@
   "roles" : [
     {
       "_comment":"This role is super role which can access all the available dashboards: [other/new roles are suppose to be added]",
-      "roleId": "roleId#1",
+      "roleId": 6,
       "roleName" : "Admin",
       "isSuper" : "",
       "orgId": "",
@@ -11,10 +11,6 @@
         {
           "name": "My Dashboard",
           "id": "home"
-        },
-        {
-          "name": "My Dashboard v2",
-          "id": "homev2"
         },
         {
           "name": "Property Tax",
@@ -25,10 +21,15 @@
           "id": "tradeLicense"
         },
         {
+          "name": "Misc Collect",
+          "id": "mCollect"
+        },
+        {
           "name": "PGR",
           "id": "pgr"
         },
         {
+          "name": "Overview",
           "id": "overview"
         },
         {
@@ -38,7 +39,7 @@
     },
     {
       "_comment":"This role is super role which can access all the available dashboards: [other/new roles are suppose to be added]",
-      "roleId": "roleId#2",
+      "roleId": 7,
       "roleName" : "Commissioner",
       "isSuper" : "",
       "orgId": "",
@@ -53,12 +54,15 @@
           "id": "ulb-tradeLicense"
         },
         {
+          "id": "ulb-mCollect"
+        },
+        {
           "id": "ulb-overview"
         },
         {
           "id": "ulb-home"
         },
-        {
+          {
           "id": "ulb-ws"
         }
       ]
