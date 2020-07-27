@@ -115,6 +115,8 @@ public class TarentoServiceImpl implements ClientService {
 		preHandle(request, chartNode, mdmsApiMappings);
 
 		ArrayNode queries = (ArrayNode) chartNode.get(Constants.JsonPaths.QUERIES);
+		
+		int[] indexCounter = {0};
 		queries.forEach(query -> {
 			String module = query.get(Constants.JsonPaths.MODULE).asText();
 			if(request.getModuleLevel().equals(Constants.Modules.HOME_REVENUE) || 
@@ -127,8 +129,10 @@ public class TarentoServiceImpl implements ClientService {
 				try {
 					JsonNode aggrNode = restService.search(indexName,objectNode.toString());
 					if(nodes.has(indexName)) { 
-						indexName = indexName + "_1";
+						indexName = indexName + "_"+ indexCounter[0];
+						indexCounter[0]++;
 					}
+					System.out.println(indexName+" "+Constants.JsonPaths.AGGREGATIONS);
 					nodes.set(indexName,aggrNode.get(Constants.JsonPaths.AGGREGATIONS));
 				}catch (Exception e) {
 					logger.error("Encountered an Exception while Executing the Query : " + e.getMessage());

@@ -56,6 +56,7 @@ public class Constants {
 		final static String COMMON = "COMMON"; 
 		final static String PT = "PT"; 
 		final static String TL = "TL"; 
+		final static String MC = "MC";
 	}
 
 	public interface KafkaTopics { 

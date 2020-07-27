@@ -433,7 +433,9 @@ public class QueryServiceImpl implements QueryService {
 			request.setEsFilters(esFilterMap);
 			if(query.get(Constants.JsonPaths.MODULE).asText().equals(Constants.Modules.COMMON) && 
 					!request.getModuleLevel().equals(Constants.Modules.HOME_REVENUE) &&
-					!request.getModuleLevel().equals(Constants.Modules.HOME_SERVICES)) { 
+					!request.getModuleLevel().equals(Constants.Modules.HOME_SERVICES)
+					//&& !request.getModuleLevel().equals(Constants.Modules.MC)
+					) { 
 				request.getFilters().put(Constants.Filters.MODULE, request.getModuleLevel()); 
 			}
 			Iterator<Entry<String, Object>> filtersItr = request.getFilters().entrySet().iterator();
