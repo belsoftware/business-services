@@ -1,24 +1,24 @@
 package com.tarento.analytics.handler;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tarento.analytics.ConfigurationLoader;
 import com.tarento.analytics.dto.AggregateDto;
 import com.tarento.analytics.dto.AggregateRequestDto;
 import com.tarento.analytics.dto.Data;
 import com.tarento.analytics.dto.Plot;
-import com.tarento.analytics.enums.ChartType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 /**
  * This handles ES response for single index, multiple index to represent data as pie figure
  * Creates plots by merging/computing(by summation) index values for same key
@@ -45,26 +45,91 @@ public class PieChartResponseHandler implements IResponseHandler {
         String symbol = chartNode.get(IResponseHandler.VALUE_TYPE).asText();
         ArrayNode aggrsPaths = (ArrayNode) chartNode.get(IResponseHandler.AGGS_PATH);
 
-        aggrsPaths.forEach(headerPath -> {
-            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
-                if(valueNode.has(BUCKETS)){
-                    JsonNode buckets = valueNode.findValue(BUCKETS);
-                    buckets.forEach(bucket -> {
-                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
-                        totalValue.add(val);
-                        Plot plot = new Plot(bucket.findValue(KEY).asText(), val, symbol);
-                        headerPlotList.add(plot);
-                    });
-
-                } else {
-                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
-                    double sum = valueNodes.stream().mapToLong(o -> o.asLong()).sum();
-                    totalValue.add(sum);
-                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
-                    headerPlotList.add(plot);
-                }
-            });
-        });
+        //temporary fix. Should be integrated with the localisation data
+        if(requestDto.getVisualizationCode().equals("totalCollectionDeptWisev2"))
+        {
+        	Double[] cummulativeValue = {(double) 0};
+	        aggrsPaths.forEach(headerPath -> {
+	            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
+	                if(valueNode.has(BUCKETS)){
+	                    JsonNode buckets = valueNode.findValue(BUCKETS);
+	                    buckets.forEach(bucket -> {
+	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
+	                        totalValue.add(val);
+	                        
+	                        if(bucket.findValue(KEY).asText().equals("TL"))
+	                        {
+	                        	Plot plot = new Plot(bucket.findValue(KEY).asText(), val, symbol);
+	                        	headerPlotList.add(plot);
+	                        }
+	                        else
+	                        {
+	                        	cummulativeValue[0] += val;
+	                        }
+	                        System.out.println("Check the bucket key value: "+bucket.findValue(KEY).asText() +" "+  symbol);
+	                    });
+	                } else {
+	                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
+	                    double sum = valueNodes.stream().mapToLong(o -> o.asLong()).sum();
+	                    totalValue.add(sum);
+	                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
+	                    headerPlotList.add(plot);
+	                }
+	            });
+	        });
+	        Plot plot = new Plot("MC", cummulativeValue[0], symbol);
+        	headerPlotList.add(plot);
+        }
+        else
+        //temporary fix. Should be integrated with the localisation data
+        if(requestDto.getVisualizationCode().equals("licenseApplicationByStatus"))
+        {
+        	Map<String, String> localisationValues = getLocalisationValues();
+        	aggrsPaths.forEach(headerPath -> {
+	            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
+	                if(valueNode.has(BUCKETS)){
+	                    JsonNode buckets = valueNode.findValue(BUCKETS);
+	                    buckets.forEach(bucket -> {
+	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
+	                        totalValue.add(val);
+	                        System.out.println("Check the localisation value: "+bucket.findValue(KEY).asText()+" "+localisationValues.get(bucket.findValue(KEY).asText()));
+	                        Plot plot = new Plot(localisationValues.get(bucket.findValue(KEY).asText()), val, symbol);
+	                        headerPlotList.add(plot);
+	                    });
+	
+	                } else {
+	                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
+	                    double sum = valueNodes.stream().mapToLong(o -> o.asLong()).sum();
+	                    totalValue.add(sum);
+	                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
+	                    headerPlotList.add(plot);
+	                }
+	            });
+	        });
+        }
+        else
+        {
+        	aggrsPaths.forEach(headerPath -> {
+	            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
+	                if(valueNode.has(BUCKETS)){
+	                    JsonNode buckets = valueNode.findValue(BUCKETS);
+	                    buckets.forEach(bucket -> {
+	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
+	                        totalValue.add(val);
+	                        Plot plot = new Plot(bucket.findValue(KEY).asText(), val, symbol);
+	                        headerPlotList.add(plot);
+	                    });
+	
+	                } else {
+	                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
+	                    double sum = valueNodes.stream().mapToLong(o -> o.asLong()).sum();
+	                    totalValue.add(sum);
+	                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
+	                    headerPlotList.add(plot);
+	                }
+	            });
+	        });
+        }
 
         Data data = new Data(headerKey, totalValue.stream().reduce(0.0, Double::sum), symbol);
         data.setPlots(headerPlotList);
@@ -73,4 +138,25 @@ public class PieChartResponseHandler implements IResponseHandler {
         return getAggregatedDto(chartNode, dataList, requestDto.getVisualizationCode());
 
     }
+   
+    //This is a temporary fix. Needs to be integrated with the localisation service
+    private Map<String, String> getLocalisationValues()
+    {
+    	Map<String, String> map = Stream.of(new String[][] {
+    		{ "INITIATED", "INITIATED" }, 
+    		{ "PENDINGPAYMENT", "PENDING PAYMENT" },
+    		{ "PENDINGAPPROVAL", "PENDING APPROVAL" },
+    		{ "APPLIED", "APPLIED" },
+    		{ "PENDINGAPPLFEE", "PENDING APPLICATION FEE" },
+    		{ "PENDINGFORAPPFEE", "PENDING APPLICATION FEE" },
+    		{ "PENDING_APPL_FEE_PAYMENT", "PENDING APPLICATION FEE"},
+    		{ "APPROVED", "APPROVED"},
+    		{ "FIELDINSPECTION", "FIELD INSPECTION" },
+    		{ "REJECTED", "REJECTED" }
+    	}
+    	).collect(Collectors.toMap(data -> data[0], data -> data[1]));
+
+    	return map;
+    }
+    
 }

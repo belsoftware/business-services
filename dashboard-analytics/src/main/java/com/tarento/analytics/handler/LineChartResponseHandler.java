@@ -84,6 +84,7 @@ public class LineChartResponseHandler implements IResponseHandler {
                     buckets.forEach(bucket -> {
                         String bkey = bucket.findValue(IResponseHandler.KEY).asText();
                         String key = getIntervalKey(bkey, Constants.Interval.valueOf(interval));
+                        
 
                         plotKeys.add(key);
                         double previousVal = !isCumulative ? 0.0 : (totalValues.size()>0 ? totalValues.get(totalValues.size()-1):0.0);
@@ -120,13 +121,26 @@ public class LineChartResponseHandler implements IResponseHandler {
 
                         }
                         //double value = previousVal + ((bucket.findValue(IResponseHandler.VALUE) != null) ? bucket.findValue(IResponseHandler.VALUE).asDouble():bucket.findValue(IResponseHandler.DOC_COUNT).asDouble());
-
-                        plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value);
+                       // System.out.println("New Value: "+value + "Check sum: "+plotMap.get(key) +" + "+ value);
+                       // Double plotMapValueInserted = plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value;
+                        //System.out.println("Printing keys "+key+" value:"+ value +" PlotMap Value inserted "+plotMapValueInserted);;
+                        //plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value);
+                        plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value :  value);
                         totalValues.add(value);
+                        //System.out.println("Total values: "+totalValues);
                     });
                 }
             });
+            
+			/*
+			 * System.out.println("Check plot map:"); for (String key : plotMap.keySet()) {
+			 * System.out.println(key +" - "+ plotMap.get(key)); }
+			 */
             List<Plot> plots = plotMap.entrySet().stream().map(e -> new Plot(e.getKey(), e.getValue(), symbol)).collect(Collectors.toList());
+			/*
+			 * System.out.println("Plots is: "+plots); for (Plot plt : plots) {
+			 * System.out.println(plt.getName()+" - "+plt.getValue()); }
+			 */
             try{
                 Data data = new Data(headerPath.asText(), (totalValues==null || totalValues.isEmpty()) ? 0.0 : totalValues.stream().reduce(0.0, Double::sum), symbol);
                 data.setPlots(plots);
