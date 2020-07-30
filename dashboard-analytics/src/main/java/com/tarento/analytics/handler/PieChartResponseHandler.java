@@ -66,7 +66,7 @@ public class PieChartResponseHandler implements IResponseHandler {
 	                        {
 	                        	cummulativeValue[0] += val;
 	                        }
-	                        System.out.println("Check the bucket key value: "+bucket.findValue(KEY).asText() +" "+  symbol);
+	                        //System.out.println("Check the bucket key value: "+bucket.findValue(KEY).asText() +" "+  symbol);
 	                    });
 	                } else {
 	                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
@@ -92,8 +92,8 @@ public class PieChartResponseHandler implements IResponseHandler {
 	                    buckets.forEach(bucket -> {
 	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
 	                        totalValue.add(val);
-	                        System.out.println("Check the localisation value: "+bucket.findValue(KEY).asText()+" "+localisationValues.get(bucket.findValue(KEY).asText()));
-	                        Plot plot = new Plot(localisationValues.get(bucket.findValue(KEY).asText()), val, symbol);
+	                        //System.out.println("Check the localisation value: "+bucket.findValue(KEY).asText()+" "+localisationValues.get(bucket.findValue(KEY).asText()));
+	                        Plot plot = new Plot(localisationValues.get(bucket.findValue(KEY).asText().toUpperCase()), val, symbol);
 	                        headerPlotList.add(plot);
 	                    });
 	
@@ -152,7 +152,9 @@ public class PieChartResponseHandler implements IResponseHandler {
     		{ "PENDING_APPL_FEE_PAYMENT", "PENDING APPLICATION FEE"},
     		{ "APPROVED", "APPROVED"},
     		{ "FIELDINSPECTION", "FIELD INSPECTION" },
-    		{ "REJECTED", "REJECTED" }
+    		{ "REJECTED", "REJECTED" },
+    		{ "EXPIRED", "EXPIRED" },
+    		{ "CANCELLED", "CANCELLED" }
     	}
     	).collect(Collectors.toMap(data -> data[0], data -> data[1]));
 
