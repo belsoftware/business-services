@@ -173,7 +173,7 @@ public class NotificationConsumer {
 			String taxName = fetchContentFromLocalization(requestInfo, paymentdetail.getTenantId(),
 					BUSINESSSERVICE_LOCALIZATION_MODULE, formatCodes(paymentdetail.getBusinessService()));
 			if(StringUtils.isEmpty(taxName))
-				taxName = "Adhoc Tax";
+				taxName = "Adhoc Fee";
 			content = content.replaceAll("<tax_name>", taxName);
 			content = content.replaceAll("<fin_year>", fetchFinYear(bill.getBillDetails().get(0).getFromPeriod(), bill.getBillDetails().get(0).getToPeriod()));
 			content = content.replaceAll("<rcpt_no>",  paymentdetail.getReceiptNumber());
