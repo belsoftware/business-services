@@ -77,6 +77,14 @@ public class NotificationConsumer {
 
 	@Value("${kafka.topics.notification.sms.key}")
 	private String smsTopickey;
+	
+    // url shortner
+
+    @Value("${egov.url.shortner.host}")
+    private String urlShortnerHost;
+
+    @Value("${egov.url.shortner.endpoint}")
+    private String urlShortnerEndpoint;
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -168,8 +176,7 @@ public class NotificationConsumer {
 			StringBuilder link = new StringBuilder();
 			link.append(uiHost + "/citizen").append("/otpLogin?mobileNo=").append(bill.getMobileNumber()).append("&redirectTo=")
 					.append(uiRedirectUrl).append("&params=").append(paymentdetail.getTenantId() + "," + paymentdetail.getReceiptNumber());
-
-			content = content.replaceAll("<rcpt_link>", link.toString());
+			content = content.replaceAll("<rcpt_link>",getShortenedUrl(link.toString()) );
 			String taxName = fetchContentFromLocalization(requestInfo, paymentdetail.getTenantId(),
 					BUSINESSSERVICE_LOCALIZATION_MODULE, formatCodes(paymentdetail.getBusinessService()));
 			if(StringUtils.isEmpty(taxName))
@@ -296,6 +303,26 @@ public class NotificationConsumer {
 		code = code.replaceAll(" ", "_");
 
 		return BUSINESSSERVICELOCALIZATION_CODE_PREFIX + code.toUpperCase();
+	}
+	
+	/**
+	 * Method to shortent the url
+	 * returns the same url if shortening fails
+	 * @param url
+	 */
+	public String getShortenedUrl(String url){
+
+		HashMap<String,String> body = new HashMap<>();
+		body.put("url",url);
+		StringBuilder builder = new StringBuilder(this.urlShortnerHost);
+		builder.append(this.urlShortnerEndpoint);
+		String res = restTemplate.postForObject(builder.toString(), body, String.class);
+
+		if(StringUtils.isEmpty(res)){
+			log.error("URL_SHORTENING_ERROR","Unable to shorten url: "+url); ;
+			return url;
+		}
+		else return res;
 	}
 
 
