@@ -1,5 +1,10 @@
 package com.tarento.analytics;
 
+import java.util.TimeZone;
+
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -31,5 +36,15 @@ public class AnalyticApp {
 	                        .allowedHeaders("*");
 	            }
 	        };
+	    }
+	    
+	    @Value("${app.timezone}")
+	    String timeZone;
+	    
+	    @PostConstruct
+	    public void init(){
+	      // Setting Spring Boot SetTimeZone
+	      
+	      TimeZone.setDefault(TimeZone.getTimeZone(timeZone));
 	    }
 }

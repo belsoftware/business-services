@@ -93,6 +93,7 @@ public class PieChartResponseHandler implements IResponseHandler {
 	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
 	                        totalValue.add(val);
 	                        //System.out.println("Check the localisation value: "+bucket.findValue(KEY).asText()+" "+localisationValues.get(bucket.findValue(KEY).asText()));
+	                        System.out.println("Inserting "+localisationValues.get(bucket.findValue(KEY).asText().toUpperCase()) + " val: " + val);
 	                        Plot plot = new Plot(localisationValues.get(bucket.findValue(KEY).asText().toUpperCase()), val, symbol);
 	                        headerPlotList.add(plot);
 	                    });
@@ -143,18 +144,18 @@ public class PieChartResponseHandler implements IResponseHandler {
     private Map<String, String> getLocalisationValues()
     {
     	Map<String, String> map = Stream.of(new String[][] {
-    		{ "INITIATED", "INITIATED" }, 
-    		{ "PENDINGPAYMENT", "PENDING PAYMENT" },
-    		{ "PENDINGAPPROVAL", "PENDING APPROVAL" },
-    		{ "APPLIED", "APPLIED" },
-    		{ "PENDINGAPPLFEE", "PENDING APPLICATION FEE" },
-    		{ "PENDINGFORAPPFEE", "PENDING APPLICATION FEE" },
-    		{ "PENDING_APPL_FEE_PAYMENT", "PENDING APPLICATION FEE"},
-    		{ "APPROVED", "APPROVED"},
-    		{ "FIELDINSPECTION", "FIELD INSPECTION" },
-    		{ "REJECTED", "REJECTED" },
-    		{ "EXPIRED", "EXPIRED" },
-    		{ "CANCELLED", "CANCELLED" }
+    		{ "INITIATED", " Initiated" }, 
+    		{ "PENDINGPAYMENT", " Pending Payment" },
+    		{ "PENDINGAPPROVAL", " Pending Approval" },
+    		{ "APPLIED", " Applied" },
+    		{ "PENDINGAPPLFEE", " Pending Application Fee" },
+    		{ "PENDINGFORAPPFEE", " Pending Application Fee" },
+    		{ "PENDING_APPL_FEE_PAYMENT", " Pending Application Fee"},
+    		{ "APPROVED", " Approved"},
+    		{ "FIELDINSPECTION", " Field Inspection" },
+    		{ "REJECTED", " Rejected" },
+    		{ "EXPIRED", " Expired" },
+    		{ "CANCELLED", " Cancelled" }
     	}
     	).collect(Collectors.toMap(data -> data[0], data -> data[1]));
 
