@@ -182,12 +182,15 @@ public interface IResponseHandler {
 
 		for(String plKey:allKeysMinusDataKeys){
 			sortedMap.put(plKey, new Plot(plKey, new Double("0"), symbol));
-			if(isCumulative){
-				List<String> keys = sortedMap.keySet().stream().collect(Collectors.toList());
-				int index = keys.indexOf(plKey);
-				double value = index>0 ? sortedMap.get(keys.get(index-1)).getValue():0.0;
-				sortedMap.get(plKey).setValue(value);
-			}
+			/*  Commented by Srikanth V. Since cummulative addition is performed in the end after,
+			 * all the buckets data are created and sorted.
+			 * 
+			 * if(isCumulative){ List<String> keys =
+			 * sortedMap.keySet().stream().collect(Collectors.toList()); int index =
+			 * keys.indexOf(plKey); double value = index>0 ?
+			 * sortedMap.get(keys.get(index-1)).getValue():0.0;
+			 * sortedMap.get(plKey).setValue(value); }
+			 */
 		}
 		logger.info("after appending missing plots : "+ sortedMap);
 		data.setPlots(sortedMap.values().stream().collect(Collectors.toList()));

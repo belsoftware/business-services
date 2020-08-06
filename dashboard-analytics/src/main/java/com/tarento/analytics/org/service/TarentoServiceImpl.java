@@ -146,7 +146,7 @@ public class TarentoServiceImpl implements ClientService {
 	private Boolean getInsightsDate(AggregateRequestDto request, String insightInterval) { 
 		Long daysBetween = daysBetween(Long.parseLong(request.getRequestDate().getStartDate()), 
 				Long.parseLong(request.getRequestDate().getEndDate()));
-		if(insightInterval.equals(Constants.Interval.month.toString()) && daysBetween > 32) {
+		if(insightInterval.equals(Constants.Interval.month.toString()) && daysBetween > 30) {
 			return Boolean.FALSE; 
 		}
 		if(insightInterval.equals(Constants.Interval.week.toString()) && daysBetween > 8) {

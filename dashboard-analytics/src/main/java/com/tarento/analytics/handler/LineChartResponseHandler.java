@@ -3,6 +3,7 @@ package com.tarento.analytics.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -87,7 +88,7 @@ public class LineChartResponseHandler implements IResponseHandler {
                         
 
                         plotKeys.add(key);
-                        double previousVal = !isCumulative ? 0.0 : (totalValues.size()>0 ? totalValues.get(totalValues.size()-1):0.0);
+                        double previousVal = 0.0;//!isCumulative ? 0.0 : (totalValues.size()>0 ? totalValues.get(totalValues.size()-1):0.0);  //Commented by Srikanth V. All cummulative additions are handled seperately in the end.
 
                         double value = 0.0;
                         if(executeComputedFields){
@@ -108,7 +109,6 @@ public class LineChartResponseHandler implements IResponseHandler {
 
                                     } else {
                                         value = previousVal + (bucket.findValue(cfs.getNewField()).get(IResponseHandler.VALUE).asLong());
-
                                     }
                                 }
 
@@ -118,29 +118,29 @@ public class LineChartResponseHandler implements IResponseHandler {
 
                         } else {
                             value = previousVal + ((bucket.findValue(IResponseHandler.VALUE) != null) ? bucket.findValue(IResponseHandler.VALUE).asDouble():bucket.findValue(IResponseHandler.DOC_COUNT).asDouble());
-
                         }
                         //double value = previousVal + ((bucket.findValue(IResponseHandler.VALUE) != null) ? bucket.findValue(IResponseHandler.VALUE).asDouble():bucket.findValue(IResponseHandler.DOC_COUNT).asDouble());
                        // System.out.println("New Value: "+value + "Check sum: "+plotMap.get(key) +" + "+ value);
-                       // Double plotMapValueInserted = plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value;
-                        //System.out.println("Printing keys "+key+" value:"+ value +" PlotMap Value inserted "+plotMapValueInserted);;
-                        //plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value);
-                        plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value :  value);
+                        //Double plotMapValueInserted = plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value;
+                        //System.out.println("    Printing keys "+key+" value:"+ value +" PlotMap Value inserted "+plotMapValueInserted);;
+                        plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value);
+                        //plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value :  value);
                         totalValues.add(value);
                         //System.out.println("Total values: "+totalValues);
                     });
                 }
             });
             
-			/*
-			 * System.out.println("Check plot map:"); for (String key : plotMap.keySet()) {
-			 * System.out.println(key +" - "+ plotMap.get(key)); }
-			 */
+			
+			  //System.out.println("Check plot map:"); for (String key : plotMap.keySet()) {
+			  //System.out.println(key +" - "+ plotMap.get(key)); }
+
+			 
             List<Plot> plots = plotMap.entrySet().stream().map(e -> new Plot(e.getKey(), e.getValue(), symbol)).collect(Collectors.toList());
-			/*
-			 * System.out.println("Plots is: "+plots); for (Plot plt : plots) {
-			 * System.out.println(plt.getName()+" - "+plt.getValue()); }
-			 */
+			
+			  //System.out.println("Plots is: "+plots); for (Plot plt : plots) {
+			  //System.out.println(plt.getName()+" - "+plt.getValue()); }
+			 
             try{
                 Data data = new Data(headerPath.asText(), (totalValues==null || totalValues.isEmpty()) ? 0.0 : totalValues.stream().reduce(0.0, Double::sum), symbol);
                 data.setPlots(plots);
@@ -150,8 +150,22 @@ public class LineChartResponseHandler implements IResponseHandler {
             }
         });
 
+       
         dataList.forEach(data -> {
             appendMissingPlot(plotKeys, data, symbol, isCumulative);
+        });
+		
+        //Added by Srikanth V
+        dataList.forEach(data -> {
+        	List<Plot> plotsList = sortPlotList(data.getPlots());//Final sorting
+        	if(isCumulative)//Final cumulative addition if required.
+        	{
+	        	Double[] prevValue = {0.0};
+	        	plotsList.forEach(p -> {
+	        		p.setValue(p.getValue() + prevValue[0]);
+	        		prevValue[0]=p.getValue();
+	        	});
+        	}
         });
         return getAggregatedDto(chartNode, dataList, requestDto.getVisualizationCode());
     }
@@ -169,9 +183,9 @@ public class LineChartResponseHandler implements IResponseHandler {
 
             String intervalKey = "";
             if(interval.equals(Constants.Interval.day)) {
-                intervalKey = day.concat("-").concat(month);
+                intervalKey = day.concat("-").concat(month).concat("-").concat(year);
             } else if(interval.equals(Constants.Interval.week)){
-                intervalKey = day.concat("-").concat(month);
+                intervalKey = day.concat("-").concat(month).concat("-").concat(year);
             } else if(interval.equals(Constants.Interval.year)){
                 intervalKey = year;
             } else if(interval.equals(Constants.Interval.month)){
@@ -215,4 +229,78 @@ public class LineChartResponseHandler implements IResponseHandler {
         else
             return "Month";
     }
+	
+	/**
+	 * Given the month, the function returns the month value.
+	 * 
+	 * @param month
+	 * @return month Value.
+	 * @author Srikanth V
+	 */
+	private int getMonthValue(String month)
+	{
+		switch(month)
+		{
+			case "Jan": return 1;
+			case "Feb": return 2;
+			case "Mar": return 3;
+			case "Apr": return 4;
+			case "May": return 5;
+			case "Jun": return 6;
+			case "Jul": return 7;
+			case "Aug": return 8;
+			case "Sep": return 9;
+			case "Oct": return 10;
+			case "Nov": return 11;
+			case "Dec": return 12;
+			default:  return 0;
+		}
+			
+	}
+	
+	/**
+	 * Sorts the plots based on the date value (name) present inside the Plot.
+	 * Ex: [3-Aug-2020, 4-Aug-2020, 5-Aug-2020, 6-Aug-2020, 2-Aug-2020] 
+	 * will be sorted as [2-Aug-2020, 3-Aug-2020, 4-Aug-2020, 5-Aug-2020, 6-Aug-2020]
+	 * @param plots
+	 * @return sorted Plots.
+	 * @author Srikanth V
+	 */
+	private List<Plot> sortPlotList(List<Plot> plots) {
+		
+		plots.sort(new Comparator<Plot>() {
+		    @Override
+		    public int compare(Plot plot1, Plot plot2) {
+		    	if(Integer.parseInt(plot1.getName().split("-")[2]) > Integer.parseInt(plot2.getName().split("-")[2])){
+		            return 1;
+		        }
+		        else
+		        if(Integer.parseInt(plot1.getName().split("-")[2]) < Integer.parseInt(plot2.getName().split("-")[2]))
+		        {
+		        	return -1;
+		        }
+		        else
+		        if(getMonthValue(plot1.getName().split("-")[1]) > getMonthValue(plot2.getName().split("-")[1])){
+		            return 1;
+		        }
+		        else
+		        if(getMonthValue(plot1.getName().split("-")[1]) < getMonthValue(plot2.getName().split("-")[1]))
+		        {
+		        	return -1;
+		        }
+		        else
+		        {
+		        	if(Integer.parseInt(plot1.getName().split("-")[0]) > Integer.parseInt(plot2.getName().split("-")[0]))
+		        		return 1;
+		        	else
+		        	if(Integer.parseInt(plot1.getName().split("-")[0]) < Integer.parseInt(plot2.getName().split("-")[0]))
+		        		return -1;
+		        	else
+		        		return 0;
+		        }
+		        
+		     }
+		});
+		return plots;
+	}
 }
