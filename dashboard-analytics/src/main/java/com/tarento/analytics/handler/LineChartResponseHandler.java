@@ -88,8 +88,9 @@ public class LineChartResponseHandler implements IResponseHandler {
                         
 
                         plotKeys.add(key);
-                        double previousVal = 0.0;//!isCumulative ? 0.0 : (totalValues.size()>0 ? totalValues.get(totalValues.size()-1):0.0);  //Commented by Srikanth V. All cummulative additions are handled seperately in the end.
-
+                        //double previousVal = !isCumulative ? 0.0 : (totalValues.size()>0 ? totalValues.get(totalValues.size()-1):0.0);  //Commented by Srikanth V. All cummulative additions are handled seperately in the end.
+                        double previousVal = 0.0;
+                        
                         double value = 0.0;
                         if(executeComputedFields){
                             try {
@@ -120,8 +121,8 @@ public class LineChartResponseHandler implements IResponseHandler {
                             value = previousVal + ((bucket.findValue(IResponseHandler.VALUE) != null) ? bucket.findValue(IResponseHandler.VALUE).asDouble():bucket.findValue(IResponseHandler.DOC_COUNT).asDouble());
                         }
                         //double value = previousVal + ((bucket.findValue(IResponseHandler.VALUE) != null) ? bucket.findValue(IResponseHandler.VALUE).asDouble():bucket.findValue(IResponseHandler.DOC_COUNT).asDouble());
-                       // System.out.println("New Value: "+value + "Check sum: "+plotMap.get(key) +" + "+ value);
-                        //Double plotMapValueInserted = plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value;
+                        //System.out.println("New Value: "+value + "Check sum: "+plotMap.get(key) +" + "+ value);
+                        Double plotMapValueInserted = plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value;
                         //System.out.println("    Printing keys "+key+" value:"+ value +" PlotMap Value inserted "+plotMapValueInserted);;
                         plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value : plotMap.get(key) + value);
                         //plotMap.put(key, plotMap.get(key) == null ? new Double("0") + value :  value);
@@ -157,7 +158,7 @@ public class LineChartResponseHandler implements IResponseHandler {
 		
         //Added by Srikanth V
         dataList.forEach(data -> {
-        	List<Plot> plotsList = sortPlotList(data.getPlots());//Final sorting
+        	List<Plot> plotsList = sortPlotList(data.getPlots(), Constants.Interval.valueOf(interval));//Final sorting
         	if(isCumulative)//Final cumulative addition if required.
         	{
 	        	Double[] prevValue = {0.0};
@@ -266,41 +267,104 @@ public class LineChartResponseHandler implements IResponseHandler {
 	 * @return sorted Plots.
 	 * @author Srikanth V
 	 */
-	private List<Plot> sortPlotList(List<Plot> plots) {
+	private List<Plot> sortPlotList(List<Plot> plots, Constants.Interval interval) {
 		
-		plots.sort(new Comparator<Plot>() {
-		    @Override
-		    public int compare(Plot plot1, Plot plot2) {
-		    	if(Integer.parseInt(plot1.getName().split("-")[2]) > Integer.parseInt(plot2.getName().split("-")[2])){
-		            return 1;
-		        }
-		        else
-		        if(Integer.parseInt(plot1.getName().split("-")[2]) < Integer.parseInt(plot2.getName().split("-")[2]))
-		        {
-		        	return -1;
-		        }
-		        else
-		        if(getMonthValue(plot1.getName().split("-")[1]) > getMonthValue(plot2.getName().split("-")[1])){
-		            return 1;
-		        }
-		        else
-		        if(getMonthValue(plot1.getName().split("-")[1]) < getMonthValue(plot2.getName().split("-")[1]))
-		        {
-		        	return -1;
-		        }
-		        else
-		        {
-		        	if(Integer.parseInt(plot1.getName().split("-")[0]) > Integer.parseInt(plot2.getName().split("-")[0]))
-		        		return 1;
-		        	else
-		        	if(Integer.parseInt(plot1.getName().split("-")[0]) < Integer.parseInt(plot2.getName().split("-")[0]))
-		        		return -1;
-		        	else
-		        		return 0;
-		        }
-		        
-		     }
-		});
+		try
+		{
+			if(interval.equals(Constants.Interval.day) || interval.equals(Constants.Interval.week))
+			{
+				plots.sort(new Comparator<Plot>() {
+				    @Override
+				    public int compare(Plot plot1, Plot plot2) {
+				    	if(Integer.parseInt(plot1.getName().split("-")[2]) > Integer.parseInt(plot2.getName().split("-")[2])){
+				            return 1;
+				        }
+				        else
+				        if(Integer.parseInt(plot1.getName().split("-")[2]) < Integer.parseInt(plot2.getName().split("-")[2]))
+				        {
+				        	return -1;
+				        }
+				        else
+				        if(getMonthValue(plot1.getName().split("-")[1]) > getMonthValue(plot2.getName().split("-")[1])){
+				            return 1;
+				        }
+				        else
+				        if(getMonthValue(plot1.getName().split("-")[1]) < getMonthValue(plot2.getName().split("-")[1]))
+				        {
+				        	return -1;
+				        }
+				        else
+				        {
+				        	if(Integer.parseInt(plot1.getName().split("-")[0]) > Integer.parseInt(plot2.getName().split("-")[0]))
+				        		return 1;
+				        	else
+				        	if(Integer.parseInt(plot1.getName().split("-")[0]) < Integer.parseInt(plot2.getName().split("-")[0]))
+				        		return -1;
+				        	else
+				        		return 0;
+				        }
+				        
+				     }
+				});
+			}
+			else
+			if(interval.equals(Constants.Interval.month))
+			{
+				plots.sort(new Comparator<Plot>() {
+				    @Override
+				    public int compare(Plot plot1, Plot plot2) {
+				    	if(Integer.parseInt(plot1.getName().split("-")[1]) > Integer.parseInt(plot2.getName().split("-")[1])){
+				            return 1;
+				        }
+				        else
+				        if(Integer.parseInt(plot1.getName().split("-")[1]) < Integer.parseInt(plot2.getName().split("-")[1]))
+				        {
+				        	return -1;
+				        }
+				        else
+				        if(getMonthValue(plot1.getName().split("-")[0]) > getMonthValue(plot2.getName().split("-")[0])){
+				            return 1;
+				        }
+				        else
+				        if(getMonthValue(plot1.getName().split("-")[0]) < getMonthValue(plot2.getName().split("-")[0]))
+				        {
+				        	return -1;
+				        }
+				        else
+				        {
+				        	return 0;
+				        }
+				        
+				     }
+				});
+			}
+			else
+			if(interval.equals(Constants.Interval.year))
+			{
+				plots.sort(new Comparator<Plot>() {
+				    @Override
+				    public int compare(Plot plot1, Plot plot2) {
+				    	if(Integer.parseInt(plot1.getName()) > Integer.parseInt(plot2.getName())){
+				            return 1;
+				        }
+				        else
+				        if(Integer.parseInt(plot1.getName()) < Integer.parseInt(plot2.getName()))
+				        {
+				        	return -1;
+				        }
+				        else
+				        {
+				        	return 0;
+				        }
+				        
+				     }
+				});
+			}
+		}
+		catch(Exception e)
+		{
+			logger.error("Could not sort. Check the key values.");
+		}
 		return plots;
 	}
 }

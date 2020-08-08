@@ -44,7 +44,45 @@ public class PieChartResponseHandler implements IResponseHandler {
 
         String symbol = chartNode.get(IResponseHandler.VALUE_TYPE).asText();
         ArrayNode aggrsPaths = (ArrayNode) chartNode.get(IResponseHandler.AGGS_PATH);
-
+        
+      //temporary fix. Should be integrated with the localisation data
+        if(requestDto.getVisualizationCode().equals("mcTotalCollectionCategoryWise"))
+        {
+        	Map<String, String> localisationValues = getLocalisationValues();
+        	Map<String, Double> createdBuckets = new HashMap<String, Double>();
+        	aggrsPaths.forEach(headerPath -> {
+	            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
+	                if(valueNode.has(BUCKETS)){
+	                    JsonNode buckets = valueNode.findValue(BUCKETS);
+	                    buckets.forEach(bucket -> {
+	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
+	                        totalValue.add(val);
+	                        //System.out.println("Check the localisation value: "+bucket.findValue(KEY).asText()+" "+localisationValues.get(bucket.findValue(KEY).asText()));
+	                        String key = localisationValues.get(bucket.findValue(KEY).asText().split("\\.")[0].toUpperCase()) == null ? 
+	                        		bucket.findValue(KEY).asText().split("\\.")[0].toUpperCase() : 
+	                        			localisationValues.get(bucket.findValue(KEY).asText().split("\\.")[0].toUpperCase());
+	                        Double cummVal = createdBuckets.get(key) == null? val : (val + createdBuckets.get(key));
+	                        //System.out.println("Existing: "+createdBuckets.get(key) +" new value: "+val );
+	                        //System.out.println("  OrigKey:"+bucket.findValue(KEY).asText()+" Inserting "+key+ " val: " +val +" cummValue: "+cummVal+" "+(createdBuckets.get(key) == null));;
+	                        createdBuckets.put(key, cummVal);
+	                        
+	                    });
+	                    createdBuckets.keySet().forEach(b -> {
+	                    	//System.out.println("Created Bucket: "+b);
+	                    	Plot plot = new Plot(b, createdBuckets.get(b), symbol);
+	                        headerPlotList.add(plot);
+	                    });
+	                } else {
+	                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
+	                    double sum = valueNodes.stream().mapToLong(o -> o.asLong()).sum();
+	                    totalValue.add(sum);
+	                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
+	                    headerPlotList.add(plot);
+	                }
+	            });
+	        });
+        }
+        else
         //temporary fix. Should be integrated with the localisation data
         if(requestDto.getVisualizationCode().equals("totalCollectionDeptWisev2"))
         {
@@ -109,6 +147,38 @@ public class PieChartResponseHandler implements IResponseHandler {
 	        });
         }
         else
+        //temporary fix. Should be integrated with the localisation data
+        if(requestDto.getVisualizationCode().equals("licenseApplicationByTradeType"))
+        {
+        	Map<String, Double> createdBuckets = new HashMap<String, Double>();
+        	aggrsPaths.forEach(headerPath -> {
+	            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
+	                if(valueNode.has(BUCKETS)){
+	                    JsonNode buckets = valueNode.findValue(BUCKETS);
+	                    buckets.forEach(bucket -> {
+	                        Double val = valueNode.findValues(VALUE).isEmpty() ? bucket.findValue(DOC_COUNT).asInt() : bucket.findValue(VALUE).asDouble();
+	                        totalValue.add(val);
+	                        //System.out.println("Check the localisation value: "+bucket.findValue(KEY).asText()+" "+localisationValues.get(bucket.findValue(KEY).asText()));
+	                        System.out.println("Inserting "+bucket.findValue(KEY).asText() + " val: " + val);
+	                        String key = bucket.findValue(KEY).asText().split("\\.")[1].toUpperCase();
+	                        createdBuckets.put(bucket.findValue(KEY).asText().split("\\.")[1].toUpperCase(), createdBuckets.get(key) == null? val : (val + createdBuckets.get(key)));
+	                        
+	                    });
+	                    createdBuckets.keySet().forEach(b -> {
+	                    	Plot plot = new Plot(b, createdBuckets.get(b), symbol);
+	                        headerPlotList.add(plot);
+	                    });
+	                } else {
+	                    List<JsonNode> valueNodes = valueNode.findValues(VALUE).isEmpty() ? valueNode.findValues(DOC_COUNT) : valueNode.findValues(VALUE);
+	                    double sum = valueNodes.stream().mapToLong(o -> o.asLong()).sum();
+	                    totalValue.add(sum);
+	                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
+	                    headerPlotList.add(plot);
+	                }
+	            });
+	        });
+        }
+        else
         {
         	aggrsPaths.forEach(headerPath -> {
 	            aggregationNode.findValues(headerPath.asText()).stream().parallel().forEach(valueNode->{
@@ -155,7 +225,19 @@ public class PieChartResponseHandler implements IResponseHandler {
     		{ "FIELDINSPECTION", " Field Inspection" },
     		{ "REJECTED", " Rejected" },
     		{ "EXPIRED", " Expired" },
-    		{ "CANCELLED", " Cancelled" }
+    		{ "CANCELLED", " Cancelled" },
+    		
+    		{ "ASSREV", " Assigned Revenues and Compensations" },
+    		{ "SALE", " Sale and Hire Charges" },
+    		{ "OTHFEE", " Other Fee and Fines" },
+    		{ "OTHERS", " Others" },
+    		{ "GRNTINT", " Grants and Interest Earned" },
+    		{ "TX", " Taxes" },
+    		{ "CREDDEP", " Creditors Deposits" },
+    		{ "SRVC", " Service and Adminstrative Charges" },
+    		{ "ENTFEE", " Entry Fee" },
+    		{ "RENT", " Rent From Municipal Properties" },
+    		{ "UC", " User Charges" }
     	}
     	).collect(Collectors.toMap(data -> data[0], data -> data[1]));
 
