@@ -86,6 +86,11 @@ public class LineChartResponseHandler implements IResponseHandler {
                         String bkey = bucket.findValue(IResponseHandler.KEY).asText();
                         String key = getIntervalKey(bkey, Constants.Interval.valueOf(interval));
                         
+                        //Temporary fix, needs to be updated with dynamic configuration.
+                        if(requestDto.getVisualizationCode().equals("licenseApplicationByTradeType"))
+                        {
+                        	key = bucket.findValue(KEY).asText().split("\\.")[1].toUpperCase();;
+                        }
 
                         plotKeys.add(key);
                         //double previousVal = !isCumulative ? 0.0 : (totalValues.size()>0 ? totalValues.get(totalValues.size()-1):0.0);  //Commented by Srikanth V. All cummulative additions are handled seperately in the end.
