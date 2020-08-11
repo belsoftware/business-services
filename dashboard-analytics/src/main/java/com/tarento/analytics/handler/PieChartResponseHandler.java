@@ -2,6 +2,7 @@ package com.tarento.analytics.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +80,12 @@ public class PieChartResponseHandler implements IResponseHandler {
 	                    Plot plot = new Plot(headerPath.asText(), sum, symbol);
 	                    headerPlotList.add(plot);
 	                }
+	                headerPlotList.sort(new Comparator<Plot>() {
+					    @Override
+					    public int compare(Plot plot1, Plot plot2) {
+					    	return plot2.getValue().compareTo(plot1.getValue());
+					    }
+	                });
 	            });
 	        });
         }
