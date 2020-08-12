@@ -155,7 +155,8 @@ public class PieChartResponseHandler implements IResponseHandler {
         }
         else
         //temporary fix. Should be integrated with the localisation data
-        if(requestDto.getVisualizationCode().equals("licenseApplicationByTradeType"))
+        if(requestDto.getVisualizationCode().equals("licenseApplicationByTradeType")
+        		|| requestDto.getVisualizationCode().equals("tlTotalCollectionByTradeType"))
         {
         	Map<String, Double> createdBuckets = new HashMap<String, Double>();
         	aggrsPaths.forEach(headerPath -> {
