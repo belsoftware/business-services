@@ -86,6 +86,15 @@ public class PaymentService {
             payerIds.add(requestInfo.getUserInfo().getUuid());
             paymentSearchCriteria.setPayerIds(payerIds);
         }*/
+        //Added By Minju for Enabling only receipt search for the CITIZen logged in as per VAPT Obsn
+        if(requestInfo.getUserInfo().getType().equals("CITIZEN")) {
+            String mobileNumber = requestInfo.getUserInfo().getUserName();
+            
+            if(paymentSearchCriteria.getMobileNumber() == null || !paymentSearchCriteria.getMobileNumber().equals(mobileNumber) ) {
+            	throw new CustomException("UNAUTHORIZED USER", "The username does not match the logged in user.");
+            }
+           
+        }
         List<Payment> payments = paymentRepository.fetchPayments(paymentSearchCriteria);
 
         return payments;
