@@ -299,7 +299,7 @@ public class NotificationConsumer {
 	 * @return
 	 */
 	private String formatCodes(String code) {
-		String regexForSpecialCharacters = "[$&+,:;=?@#|'<>.-^*()%!]";
+		String regexForSpecialCharacters = "[$&+,:;=?@#|'<>.^*()%!-]";
 		code = code.replaceAll(regexForSpecialCharacters, "_");
 		code = code.replaceAll(" ", "_");
 
