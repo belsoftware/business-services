@@ -71,8 +71,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.jaegertracing.thriftjava.Log;
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("/payments")
+@Slf4j
 public class PaymentController {
 
     @Autowired
@@ -88,9 +92,8 @@ public class PaymentController {
     @ResponseBody
     public ResponseEntity<PaymentResponse> search(@ModelAttribute PaymentSearchCriteria paymentSearchCriteria,
                                              @RequestBody @Valid final RequestInfoWrapper requestInfoWrapper) {
-
-        final RequestInfo requestInfo = requestInfoWrapper.getRequestInfo();
-
+    	final RequestInfo requestInfo = requestInfoWrapper.getRequestInfo();
+        log.info("PaymentController.search("+paymentSearchCriteria+" , "+ requestInfo+")");
 		/*
 		 * Only Applicable if there is no receipt number search
 		 * Only Apllicable when search ignore status has been defined in application properties
