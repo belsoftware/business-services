@@ -6,13 +6,16 @@ import static org.egov.demand.util.Constants.INVALID_TENANT_ID_MDMS_MSG;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import org.egov.common.contract.request.RequestInfo;
 import org.egov.demand.config.ApplicationProperties;
 import org.egov.demand.model.AuditDetails;
+import org.egov.demand.model.BusinessServiceDetail;
 import org.egov.demand.repository.ServiceRequestRepository;
 import org.egov.mdms.model.MasterDetail;
 import org.egov.mdms.model.MdmsCriteria;
@@ -30,6 +33,8 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 
 import lombok.extern.slf4j.Slf4j;
+import net.logstash.logback.encoder.org.apache.commons.lang.StringUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.util.CollectionUtils;
 
 @Component
@@ -45,6 +50,11 @@ public class Util {
 	@Autowired
 	private ServiceRequestRepository serviceRequestRepository;
 
+	
+	private static final String BUSINESSSERVICE_MDMS_MODULE = "BillingService";
+	public static final List<String> BUSINESSSERVICE_MDMS_MASTER = Arrays.asList("BusinessService");
+	public static final String BUSINESSSERVICE_CODES_FILTER = "$.[?(@.type=='Adhoc')].code";
+	public static final String BUSINESSSERVICE_CODES_JSONPATH = "$.MdmsRes.BillingService.BusinessService";
 	/**
 	 * prepares mdms request
 	 * 
@@ -60,7 +70,7 @@ public class Util {
 
 		List<MasterDetail> masterDetails = new ArrayList<>();
 		names.forEach(name -> {
-				masterDetails.add(MasterDetail.builder().name(name).build());
+				masterDetails.add(MasterDetail.builder().name(name).filter(filter).build());
 		});
 
 		ModuleDetail moduleDetail = ModuleDetail.builder().moduleName(moduleName).masterDetails(masterDetails).build();
@@ -177,6 +187,22 @@ public class Util {
 			throw new CustomException("BUSINESSSERVICE_ERROR","Failed to fetch isAdvanceAllowed for businessService: "+businessService);
 
 		return isAdvanceAllowed.get(0);
+	}
+	
+	public List<String> fetchBusinessServiceFromMDMS(RequestInfo requestInfo, String tenantId){
+		MdmsCriteriaReq mdmsCriteriaReq =prepareMdMsRequest(tenantId,BUSINESSSERVICE_MDMS_MODULE, BUSINESSSERVICE_MDMS_MASTER, BUSINESSSERVICE_CODES_FILTER, requestInfo);
+		StringBuilder uri = new StringBuilder(appProps.getMdmsHost()).append(appProps.getMdmsEndpoint());
+		List<String> masterdata = new ArrayList<>();
+		
+		try {
+			Object response = serviceRequestRepository.fetchResult(uri.toString(), mdmsCriteriaReq);
+			masterdata = JsonPath.read(response, BUSINESSSERVICE_CODES_JSONPATH);
+		}
+		catch(Exception e) {
+			log.error("Exception while fetching business service codes: ",e);
+		}
+		return masterdata;
+		
 	}
 	
 }

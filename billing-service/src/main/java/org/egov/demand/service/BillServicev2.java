@@ -174,6 +174,9 @@ public class BillServicev2 {
 		 * grouping by service code and collecting the list of 
 		 * consumerCodes against the service code
 		 */
+		
+		List<String> adhocServices = util.fetchBusinessServiceFromMDMS(requestInfo, billCriteria.getTenantId());
+		
  		List<String> cosnumerCodesNotFoundInBill = new ArrayList<>(billCriteria.getConsumerCode());
 		List<String> cosnumerCodesToBeExpired = new ArrayList<>();
 		List<BillV2> billsToBeReturned = new ArrayList<>();
@@ -181,9 +184,9 @@ public class BillServicev2 {
 		
 		for (Entry<String, BillV2> entry : consumerCodeAndBillMap.entrySet()) {
 			BillV2 bill = entry.getValue();
-
+			
 			for (BillDetailV2 billDetail : bill.getBillDetails()) {
-				if (billDetail.getExpiryDate().compareTo(System.currentTimeMillis()) < 0) {
+				if (billDetail.getExpiryDate().compareTo(System.currentTimeMillis()) < 0 && !adhocServices.contains(bill.getBusinessService())) {
 					isBillExpired = true;
 					break;
 				}
