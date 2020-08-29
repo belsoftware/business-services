@@ -54,7 +54,7 @@ public class Util {
 	private static final String BUSINESSSERVICE_MDMS_MODULE = "BillingService";
 	public static final List<String> BUSINESSSERVICE_MDMS_MASTER = Arrays.asList("BusinessService");
 	public static final String BUSINESSSERVICE_CODES_FILTER = "$.[?(@.type=='Adhoc')].code";
-	public static final String BUSINESSSERVICE_CODES_JSONPATH = "$.MdmsRes.BillingService.BusinessService";
+	public static final String BUSINESSSERVICE_CODES_JSONPATH = "$.MdmsRes.BillingService.BusinessService[?(@.type=='Adhoc')].code";
 	/**
 	 * prepares mdms request
 	 * 
@@ -70,7 +70,7 @@ public class Util {
 
 		List<MasterDetail> masterDetails = new ArrayList<>();
 		names.forEach(name -> {
-				masterDetails.add(MasterDetail.builder().name(name).filter(filter).build());
+				masterDetails.add(MasterDetail.builder().name(name).build());
 		});
 
 		ModuleDetail moduleDetail = ModuleDetail.builder().moduleName(moduleName).masterDetails(masterDetails).build();
