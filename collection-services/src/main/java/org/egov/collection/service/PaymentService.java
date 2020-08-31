@@ -88,7 +88,7 @@ public class PaymentService {
         }*/
         //Added By Minju for Enabling only receipt search for the CITIZen logged in as per VAPT Obsn
         if(requestInfo.getUserInfo().getType().equals("CITIZEN")) {
-        	paymentSearchCriteria.getMobileNumber().equals(requestInfo.getUserInfo().getUserName());
+        	paymentSearchCriteria.setMobileNumber(requestInfo.getUserInfo().getUserName());
         }
         List<Payment> payments = paymentRepository.fetchPayments(paymentSearchCriteria);
         return payments;
