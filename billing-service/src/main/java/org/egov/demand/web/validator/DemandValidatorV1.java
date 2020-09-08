@@ -64,16 +64,15 @@ import org.egov.demand.model.TaxHeadMaster;
 import org.egov.demand.model.TaxPeriod;
 import org.egov.demand.repository.DemandRepository;
 import org.egov.demand.repository.ServiceRequestRepository;
-import org.egov.demand.util.Util;
+import org.egov.demand.service.UserService;
 import org.egov.demand.web.contract.DemandRequest;
 import org.egov.demand.web.contract.User;
 import org.egov.demand.web.contract.UserResponse;
 import org.egov.demand.web.contract.UserSearchRequest;
-import org.egov.mdms.model.MdmsCriteriaReq;
-import org.egov.tracer.http.HttpUtils;
+
 import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -91,10 +90,10 @@ public class DemandValidatorV1 {
 	private ServiceRequestRepository serviceRequestRepository;
 	
 	@Autowired
-	private Util util;
+	private ObjectMapper mapper;
 	
 	@Autowired
-	private ObjectMapper mapper;
+	UserService userService;
 	
 	@Autowired
 	private DemandRepository demandRepository;
@@ -111,7 +110,7 @@ public class DemandValidatorV1 {
 
 		RequestInfo requestInfo = demandRequest.getRequestInfo();
 		List<Demand> demands = demandRequest.getDemands();
-		String tenantId = demands.get(0).getTenantId();
+		
 
 
 		/*
@@ -204,25 +203,7 @@ public class DemandValidatorV1 {
 		throwErrorForCreate(businessServicesWithNoTaxPeriods, businessServicesNotFound, taxHeadsNotFound, errorMap);
 	}
 
-	/**
-	 * Altering tax/collection value of a demand to negative if it's tax-head is debit 
-	 *  
-	 * @param taxHeadMap
-	 * @param detail
-	 */
-	private void alterDebitTaxToNegativeInCaseOfPositve(Map<String, TaxHeadMaster> taxHeadMap, DemandDetail detail) {
-		/*
-		 * setting tax amount to negative in case of debit tax-head and positive tax
-		 * value
-		 */
-		TaxHeadMaster taxHead = taxHeadMap.get(detail.getTaxHeadMasterCode());
-		if (taxHead.getIsDebit() && detail.getTaxAmount().compareTo(BigDecimal.ZERO) > 0) {
 
-			detail.setTaxAmount(detail.getTaxAmount().negate());
-			if (detail.getCollectionAmount().compareTo(BigDecimal.ZERO) > 0)
-				detail.setCollectionAmount(detail.getCollectionAmount().negate());
-		}
-	}
 
 	/**
 	 * Private method to throw errors for create validation
@@ -335,7 +316,11 @@ public class DemandValidatorV1 {
 
 		if (!dbDemandMap.isEmpty()) {
 			for (Demand demand : demands) {
-				for (Demand demandFromMap : dbDemandMap.get(demand.getConsumerCode())) {
+				List<Demand> demandsWithSamekey = dbDemandMap.get(demand.getConsumerCode());
+				if (CollectionUtils.isEmpty(demandsWithSamekey))
+					continue;
+
+				for (Demand demandFromMap : demandsWithSamekey) {
 					if (demand.getTaxPeriodFrom().equals(demandFromMap.getTaxPeriodFrom())
 							&& demand.getTaxPeriodTo().equals(demandFromMap.getTaxPeriodTo()))
 						errors.add(demand.getConsumerCode());
@@ -357,42 +342,54 @@ public class DemandValidatorV1 {
      */
 	private void validatePayer(List<Demand> demands, Set<String> payerIds, RequestInfo requestInfo, Map<String, String> errorMap) {
 
-		if (CollectionUtils.isEmpty(payerIds))
-			return;
-
-		String url = applicationProperties.getUserServiceHostName()
-				.concat(applicationProperties.getUserServiceSearchPath());
-
+		
 		List<User> owners = null;
 		Set<String> missingIds = new HashSet<>();
 		Set<String> employeeIds = new HashSet<>();
+		
+		Map<String, User> ownerMap = new HashMap<>();
 
-		UserSearchRequest userSearchRequest = UserSearchRequest.builder().requestInfo(requestInfo).uuid(payerIds)
-				.pageSize(500).build();
+		if (!CollectionUtils.isEmpty(payerIds)) {
 
-		owners = mapper.convertValue(serviceRequestRepository.fetchResult(url, userSearchRequest), UserResponse.class)
-				.getUser();
+			String url = applicationProperties.getUserServiceHostName().concat(applicationProperties.getUserServiceSearchPath());
 
-		if (CollectionUtils.isEmpty(owners))
-			errorMap.put(USER_UUID_NOT_FOUND_KEY,
-					USER_UUID_NOT_FOUND_MSG.replace(USER_UUID_NOT_FOUND_REPLACETEXT, payerIds.toString()));
+			UserSearchRequest userSearchRequest = UserSearchRequest.builder().requestInfo(requestInfo).uuid(payerIds)
+					.pageSize(500).build();
 
-		Map<String, User> ownerMap = owners.stream().collect(Collectors.toMap(User::getUuid, Function.identity()));
+			owners = mapper
+					.convertValue(serviceRequestRepository.fetchResult(url, userSearchRequest), UserResponse.class)
+					.getUser();
 
+			if (CollectionUtils.isEmpty(owners))
+				errorMap.put(USER_UUID_NOT_FOUND_KEY,
+						USER_UUID_NOT_FOUND_MSG.replace(USER_UUID_NOT_FOUND_REPLACETEXT, payerIds.toString()));
+
+			ownerMap.putAll(owners.stream().collect(Collectors.toMap(User::getUuid, Function.identity())));
+		}
 		/*
 		 * Adding the missing ids to the list to be added to error map
 		 */
 		for (Demand demand : demands) {
 
-			String uuid = demand.getPayer().getUuid();
-			User payer = ownerMap.get(uuid);
+			User payerFromDemand = demand.getPayer();
 
-			if (payer == null)
-				missingIds.add(uuid);
-			else if ("EMPLOYEE".equalsIgnoreCase(payer.getType()))
-				employeeIds.add(uuid);
-			else
-				demand.setPayer(payer);
+			if (null != payerFromDemand && null != payerFromDemand.getUuid()) {
+
+				String uuid = demand.getPayer().getUuid();
+				User payer = ownerMap.get(uuid);
+
+				if (payer == null)
+					missingIds.add(uuid);
+				else if ("EMPLOYEE".equalsIgnoreCase(payer.getType()))
+					employeeIds.add(uuid);
+				else
+					demand.setPayer(payer);
+
+			} else if (null != payerFromDemand
+					&& (null != payerFromDemand.getMobileNumber() && null != payerFromDemand.getName())
+					&& applicationProperties.getIsUserCreateEnabled()) {
+				getuserFromNameAndNumber(demand, requestInfo);
+			}
 		}
 
 		if (!CollectionUtils.isEmpty(employeeIds))
@@ -575,5 +572,34 @@ public class DemandValidatorV1 {
 
 		if (!CollectionUtils.isEmpty(errorMap))
 			throw new CustomException(errorMap);
+	}
+	
+
+	/**
+	 * If Citizen is paying then the id of the logged in user becomes payer id.
+	 * If Employee is paying
+	 *  1. the id of the payer info of the bill will be attached as payer id.
+	 *  2. if user not found, new user will be created
+	 *  
+	 * @param {@link Demand}, {@link RequestInfo}
+	 */
+	private void getuserFromNameAndNumber(Demand demand, RequestInfo requestInfo) {
+
+		org.egov.common.contract.request.User userInfo = requestInfo.getUserInfo();
+		User payer = demand.getPayer();
+
+		if (userInfo.getType().equalsIgnoreCase("CITIZEN")) {
+			payer.setUuid(userInfo.getUuid());
+		} else {
+
+			Map<String, String> res = userService.getUser(requestInfo, payer.getMobileNumber(), demand.getTenantId());
+			if (CollectionUtils.isEmpty(res.keySet())) {
+
+				payer.setUuid(userService.createUser(demand, requestInfo));
+			} else {
+				payer.setUuid(res.get("id"));
+			}
+		}
+		demand.setPayer(payer);
 	}
 }

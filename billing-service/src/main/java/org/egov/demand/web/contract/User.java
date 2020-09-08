@@ -1,7 +1,7 @@
 package org.egov.demand.web.contract;
 
-import javax.validation.constraints.NotNull;
 
+import javax.validation.constraints.Pattern;
 import org.egov.demand.model.Owner;
 
 import lombok.AllArgsConstructor;
@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class User {
 
-	@NotNull
+	
 	private String uuid;
 	private Long id;
 	private String userName;
@@ -23,6 +23,7 @@ public class User {
 	private String salutation;
 	private String name;
 	private String gender;
+	@Pattern(regexp = "(^[6-9][0-9]{9}$)", message = "Inavlid mobile number, should start with 6-9 and contain ten digits of 0-9") 
 	private String mobileNumber;
 	private String emailId;
 	private String altContactNumber;

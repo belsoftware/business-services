@@ -136,6 +136,12 @@ public class ApplicationProperties {
 
 	@Value("${user.service.searchpath}")
 	private String userServiceSearchPath;
+	
+	 @Value("${demand.is.user.create.enabled}")
+	    private Boolean isUserCreateEnabled;
+
+	    @Value("${egov.user.create.user}")
+	    private String userCreateEnpoint;
 
 	@Value("#{${bs.businesscode.demand.updateurl}}")
 	private Map<String, String> businessCodeAndDemandUpdateUrlMap;
