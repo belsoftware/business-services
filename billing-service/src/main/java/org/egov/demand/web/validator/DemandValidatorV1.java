@@ -44,8 +44,10 @@ import static org.egov.demand.util.Constants.USER_UUID_NOT_FOUND_MSG;
 import static org.egov.demand.util.Constants.USER_UUID_NOT_FOUND_REPLACETEXT;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -261,9 +263,13 @@ public class DemandValidatorV1 {
 
 			if (taxPeriod == null) {
 
+				SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy");					        
+		        String fromDate = df.format(new Date(demand.getTaxPeriodFrom()));		        
+		        String toDate = df.format(new Date(demand.getTaxPeriodTo()));
+		        
 				String msg = TAXPERIOD_NOT_FOUND_MSG
-						.replace(TAXPERIOD_NOT_FOUND_FROMDATE, demand.getTaxPeriodFrom().toString())
-						.replace(TAXPERIOD_NOT_FOUND_TODATE, demand.getTaxPeriodTo().toString());
+						.replace(TAXPERIOD_NOT_FOUND_FROMDATE, fromDate)
+						.replace(TAXPERIOD_NOT_FOUND_TODATE, toDate);
 				errorMap.put(TAXPERIOD_NOT_FOUND_KEY, msg);
 			}
 
