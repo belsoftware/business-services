@@ -2,6 +2,7 @@ package org.egov.hrms.utils;
 
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.egov.hrms.web.contract.EmployeeSearchCriteria;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,8 @@ public class HRMSUtils {
 	 * @param params
 	 * @return
 	 */
-	public String generatePassword(List<String> params) {
+	public String generatePassword(List<String> requestParam) {
+		List<String> params = requestParam.stream().map(param -> param.replaceAll("[^a-zA-Z0-9]", "")).collect(Collectors.toList());
 		StringBuilder password = new StringBuilder();
 		Random random = new Random();
 		params.add(allowedPasswordSpecialCharacters);
