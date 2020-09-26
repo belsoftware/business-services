@@ -3,11 +3,10 @@ package org.egov.hrms.utils;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
-
 import org.egov.hrms.web.contract.EmployeeSearchCriteria;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
+import org.springframework.util.CollectionUtils; 
 
 @Service
 public class HRMSUtils {
@@ -28,7 +27,7 @@ public class HRMSUtils {
 	 * @return
 	 */
 	public String generatePassword(List<String> requestParam) {
-		List<String> params = requestParam.stream().map(param -> param.replaceAll("[^a-zA-Z0-9]", "")).collect(Collectors.toList());
+		List<String> params = requestParam.stream().map(param -> param.replaceAll("[^a-zA-Z0-9]", "")).filter(s -> s!=null && !s.isEmpty()).collect(Collectors.toList());
 		StringBuilder password = new StringBuilder();
 		Random random = new Random();
 		params.add(allowedPasswordSpecialCharacters);
@@ -48,9 +47,11 @@ public class HRMSUtils {
 				}
 			}
 		}catch(Exception e) {
-			password.append("123456");
+			password = new StringBuilder();
+			String pwd= allowedPasswordSpecialCharacters+"A1b2C3d4";
+			pwd.substring(0, pwdLength);
+			password.append(pwd.substring(0, pwdLength));
 		}
-
 		return password.toString().replaceAll("\\s+", "");
 	}
 
