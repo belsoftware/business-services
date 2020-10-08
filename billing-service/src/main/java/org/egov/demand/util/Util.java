@@ -70,7 +70,7 @@ public class Util {
 
 		List<MasterDetail> masterDetails = new ArrayList<>();
 		names.forEach(name -> {
-				masterDetails.add(MasterDetail.builder().name(name).build());
+				masterDetails.add(MasterDetail.builder().name(name).filter(filter).build());
 		});
 
 		ModuleDetail moduleDetail = ModuleDetail.builder().moduleName(moduleName).masterDetails(masterDetails).build();
