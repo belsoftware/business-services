@@ -598,7 +598,7 @@ public class DemandValidatorV1 {
 			payer.setUuid(userInfo.getUuid());
 		} else {
 
-			Map<String, String> res = userService.getUser(requestInfo, payer.getMobileNumber(), demand.getTenantId());
+			Map<String, String> res = userService.getUser(requestInfo, payer.getMobileNumber(), payer.getName(), demand.getTenantId());
 			if (CollectionUtils.isEmpty(res.keySet())) {
 
 				payer.setUuid(userService.createUser(demand, requestInfo));
