@@ -101,6 +101,7 @@ public class NotificationConsumer {
 	public static final String BUSINESSSERVICELOCALIZATION_CODE_PREFIX = "BILLINGSERVICE_BUSINESSSERVICE_";
 	public static final String LOCALIZATION_CODES_JSONPATH = "$.messages.*.code";
 	public static final String LOCALIZATION_MSGS_JSONPATH = "$.messages.*.message";
+	public static final String LOCALIZATION_TEMPLATEID_JSONPATH = "$.messages.*.templateId";
 
 	private static final String BUSINESSSERVICE_MDMS_MODULE = "BillingService";
 	public static final String BUSINESSSERVICE_MDMS_MASTER = "BusinessService";
@@ -140,10 +141,12 @@ public class NotificationConsumer {
 				if (businessServiceAllowed.contains(detail.getBusinessService())) {
 					String phNo = bill.getMobileNumber();
 					String message = buildSmsBody(bill, detail, receiptReq.getRequestInfo());
+					String templateId =fetchTemplateIdFromLocalization(receiptReq.getRequestInfo(), detail.getTenantId(), COLLECTION_LOCALIZATION_MODULE, PAYMENT_MSG_LOCALIZATION_CODE);
 					if (!StringUtils.isEmpty(message)) {
 						Map<String, Object> request = new HashMap<>();
 						request.put("mobileNumber", phNo);
 						request.put("message", message);
+						request.put("templateId", templateId);
 
 						producer.producer(smsTopic, smsTopickey, request);
 					} else {
@@ -227,6 +230,43 @@ public class NotificationConsumer {
 			}
 		}
 		return message;
+	}
+	
+	/**
+	 * Fix : Add template id 
+	 * @param requestInfo
+	 * @param tenantId
+	 * @param module
+	 * @param code
+	 * @return
+	 */
+	private String fetchTemplateIdFromLocalization(RequestInfo requestInfo, String tenantId, String module, String code) {
+		String templateId = null;
+		List<String> codes = new ArrayList<>();
+		List<String> templateIds = new ArrayList<>();
+		Object result = null;
+		String locale = requestInfo.getMsgId().split("[|]")[1]; // Conventionally locale is sent in the first index of msgid split by |
+		if(StringUtils.isEmpty(locale))
+			locale = fallBackLocale;
+		StringBuilder uri = new StringBuilder();
+		uri.append(localizationHost).append(localizationEndpoint);
+		uri.append("?tenantId=").append(tenantId.split("\\.")[0]).append("&locale=").append(locale).append("&module=").append(module);
+		Map<String, Object> request = new HashMap<>();
+		request.put("RequestInfo", requestInfo);
+		try {
+			result = restTemplate.postForObject(uri.toString(), request, Map.class);
+			codes = JsonPath.read(result, LOCALIZATION_CODES_JSONPATH);
+			templateIds = JsonPath.read(result, LOCALIZATION_TEMPLATEID_JSONPATH);
+			if (null != result && !CollectionUtils.isEmpty(codes) && !CollectionUtils.isEmpty(templateIds) && codes.size() == templateIds.size()) {
+				for (int i = 0; i < codes.size(); i++) {
+					if(codes.get(i).equals(code)) templateId = templateIds.get(i);
+				}
+			}
+		} catch (Exception e) {
+			log.error("Exception while fetching from localization: " + e);
+		}
+		
+		return templateId;
 	}
 
 
