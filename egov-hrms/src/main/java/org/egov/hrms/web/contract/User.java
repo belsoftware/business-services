@@ -143,7 +143,6 @@ public class User {
     @JsonProperty("identificationMark")
     private String identificationMark;
 
-    @Size(max=36)
     @JsonProperty("photo")
     private String photo;
 
