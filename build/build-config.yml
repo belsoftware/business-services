@@ -73,6 +73,14 @@ config:
       - work-dir: "finance-collections-voucher-consumer/src/main/resources/db"
         image-name: "finance-collections-voucher-consumer-db"
 
+  - name: "builds/business-services/bel-abas-integration"
+    build:
+      - work-dir: "bel-abas-integration"
+        image-name: "bel-abas-integration"
+        dockerfile: "build/maven/Dockerfile"
+      - work-dir: "bel-abas-integration/src/main/resources/db"
+        image-name: "bel-abas-integration-db"
+        
   - name: "builds/business-services/dashboard-analytics"
     build:
       - work-dir: "dashboard-analytics"
