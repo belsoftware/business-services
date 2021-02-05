@@ -2,6 +2,7 @@ package org.bel.abas.integration;
 
 import org.egov.tracer.config.TracerConfiguration;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -10,7 +11,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "org.bel.abas.integration")
+@EnableAutoConfiguration
 @Import({TracerConfiguration.class})
 public class BelABASIntegrationApplication {
 
