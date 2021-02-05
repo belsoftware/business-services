@@ -5,7 +5,7 @@
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>2.2.6.RELEASE</version>
   </parent>
-  <groupId>org.bel</groupId>
+  <groupId>org.egov</groupId>
   <artifactId>bel-abas-integration</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>bel-abas-integration</name>
@@ -26,13 +26,19 @@
       <artifactId>spring-boot-starter-jdbc</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.kafka</groupId>
-      <artifactId>spring-kafka</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <optional>true</optional>
+      <groupId>io.swagger</groupId>
+      <artifactId>swagger-core</artifactId>
+      <version>1.5.18</version>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>6.4.3</version>
     </dependency>
     <dependency>
       <groupId>org.egov.services</groupId>
@@ -42,17 +48,31 @@
     <dependency>
       <groupId>org.egov.services</groupId>
       <artifactId>services-common</artifactId>
-      <version>1.0.0-RELEASE</version>
+      <version>1.0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.validation</groupId>
+      <artifactId>validation-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>42.2.2.jre7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.egov</groupId>
+      <artifactId>mdms-client</artifactId>
+      <version>0.0.2-SNAPSHOT</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
   <repositories>
