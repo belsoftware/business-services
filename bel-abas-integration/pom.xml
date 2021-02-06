@@ -97,6 +97,14 @@
       <name>eGov Public Repository Group</name>
       <url>https://nexus-repo.egovernments.org/nexus/content/groups/public/</url>
     </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central1</id>
+      <name>Central Repository</name>
+      <url>https://repo1.maven.apache.org/maven2</url>
+    </repository>    
   </repositories>
   <build>
     <sourceDirectory>src/main/java</sourceDirectory>
