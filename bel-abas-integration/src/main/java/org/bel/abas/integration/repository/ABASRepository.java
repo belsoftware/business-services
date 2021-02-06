@@ -1,6 +1,9 @@
 package org.bel.abas.integration.repository;
 
 
+import java.sql.Timestamp;
+import java.util.UUID;
+
 import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,5 +28,15 @@ public class ABASRepository {
 	    }catch(Exception e) {
 	    	throw new CustomException("INVALID INPUT","Error in fethcing data");
 	    }
+	}
+
+	public void saveSharedData(String json, String createdBy) {
+		try {
+			String insertSQL = "INSERT INTO eg_abas_shared_data (id, createdtime, jsonstring, createdby) VALUES (?, ?, ?, ?)";
+			jdbcTemplate.update(insertSQL, UUID.randomUUID() , new Timestamp(System.currentTimeMillis()) ,json, createdBy);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new CustomException("INVALID INPUT", "Error in fethcing data");
+		}
 	}
 }

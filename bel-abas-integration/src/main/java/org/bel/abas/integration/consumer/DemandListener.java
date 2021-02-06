@@ -64,7 +64,8 @@ public class DemandListener {
     		}
     		request.setCheckSum(abasDemands.get(0).getCreatedBy() +" | "+abasDemands.get(0).getUlbCode());
     		request.setVoucherextsysdto(abasDemands);
-    		log.info(new Gson().toJson(request));
+    		String json =new Gson().toJson(request);
+    		abasRepository.saveSharedData(json,"BEL");
     	}
 		catch (Exception e) {
 			e.printStackTrace();
