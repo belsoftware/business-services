@@ -92,3 +92,9 @@ config:
       - work-dir: "dashboard-ingest"
         image-name: "dashboard-ingest"
         dockerfile: "build/maven/Dockerfile"        
+        
+  - name: "builds/business-services/dss-sync"
+    build:
+      - work-dir: "dss-sync"
+        image-name: "dss-sync"
+        dockerfile: "build/maven/Dockerfile"          
