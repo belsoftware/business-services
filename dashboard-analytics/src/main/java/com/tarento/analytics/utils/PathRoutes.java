@@ -10,6 +10,7 @@ public interface PathRoutes {
 
 		final String GET_CHART = "/getChart";
 		final String GET_CHART_V2 = "/getChartV2";
+		final String GET_CHART_OPEN = "/getChartOpen";
 		final String GET_CHART_V3 = "/getChartV3";
 		final String GET_DASHBOARD_CONFIG = "/getDashboardConfig"; 
 		final String GET_HOME_CONFIG = "/getHomeConfig";

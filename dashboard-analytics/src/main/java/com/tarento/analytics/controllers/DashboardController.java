@@ -2,22 +2,31 @@ package com.tarento.analytics.controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.tarento.analytics.org.service.ClientServiceFactory;
-import com.tarento.analytics.service.AmazonS3ClientService;
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.lang3.StringUtils;
-import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
@@ -25,17 +34,15 @@ import com.google.gson.GsonBuilder;
 import com.tarento.analytics.constant.Constants;
 import com.tarento.analytics.constant.ErrorCode;
 import com.tarento.analytics.dto.AggregateRequestDto;
-import com.tarento.analytics.dto.AggregateRequestDtoV3;
 import com.tarento.analytics.dto.RequestDto;
-import com.tarento.analytics.dto.RequestDtoV3;
 import com.tarento.analytics.dto.RoleDto;
 import com.tarento.analytics.dto.UserDto;
 import com.tarento.analytics.exception.AINException;
-import com.tarento.analytics.org.service.ClientService;
+import com.tarento.analytics.org.service.ClientServiceFactory;
+import com.tarento.analytics.service.AmazonS3ClientService;
 import com.tarento.analytics.service.MetadataService;
 import com.tarento.analytics.utils.PathRoutes;
 import com.tarento.analytics.utils.ResponseGenerator;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping(PathRoutes.DashboardApi.DASHBOARD_ROOT_PATH)
@@ -47,12 +54,26 @@ public class DashboardController {
 	private MetadataService metadataService;
 	@Autowired
 	private AmazonS3ClientService amazonS3ClientService;
-
+	
+    @Value("#{'${allowed.visualization.codes}'.split(',')}")
+    private String[] allowedVisualizationCodes;
+    
+    @Value("#{'${allowed.visualization.types}'.split(',')}")
+    private String[] allowedVisualizationTypes;
+    
+    private List<String> allowedVisualizationCodeList = new ArrayList<String>();
+    private List<String> allowedVisualizationList = new ArrayList<String>();
 /*    @Autowired
 	private ClientService clientService;*/
 
 	@Autowired
 	private ClientServiceFactory clientServiceFactory;
+	
+    @PostConstruct
+    public void loadUrls() {
+    	allowedVisualizationCodeList = Arrays.asList(allowedVisualizationCodes);
+    	allowedVisualizationList = Arrays.asList(allowedVisualizationTypes);
+    }
 
 	@RequestMapping(value = PathRoutes.DashboardApi.FILE_PATH, method = RequestMethod.POST)
 	public Map<String, String> uploadFile(@RequestPart(value = "file") MultipartFile file)
@@ -115,7 +136,25 @@ public class DashboardController {
 	@RequestMapping(value = PathRoutes.DashboardApi.GET_CHART_V2, method = RequestMethod.POST)
 	public String getVisualizationChartV2( @RequestBody RequestDto requestDto, @RequestHeader(value = "x-user-info", required = false) String xUserInfo, ServletWebRequest request)
 			throws IOException {
-
+		return getVisualizationChartV2Api( requestDto, xUserInfo, request);
+	}
+	
+	@RequestMapping(value = PathRoutes.DashboardApi.GET_CHART_OPEN, method = RequestMethod.POST)
+	public String getVisualizationChartOpen( @RequestBody RequestDto requestDto, @RequestHeader(value = "x-user-info", required = false) String xUserInfo, ServletWebRequest request)
+			throws IOException {
+		AggregateRequestDto requestInfo = requestDto.getAggregationRequestDto();
+		if(allowedVisualizationCodeList.contains(requestInfo.getVisualizationCode()) && allowedVisualizationList.contains(requestInfo.getVisualizationType()))
+		{
+			return getVisualizationChartV2Api( requestDto, xUserInfo, request);
+		}
+		else
+		{
+			return ResponseGenerator.failureResponse("UNAUTHORISED", "UNAUTHORISED");
+		}
+	}
+	
+	private String getVisualizationChartV2Api( RequestDto requestDto, String xUserInfo, ServletWebRequest request) throws IOException
+	{
 		/*logger.info("Request Detail:" + requestDto);
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		UserDto user = gson.fromJson(xUserInfo, UserDto.class);*/
@@ -162,6 +201,7 @@ public class DashboardController {
 			response = ResponseGenerator.failureResponse(e.getErrorCode(), e.getErrorMessage());
 		}
 		return response;
+	
 	}
 	
 /*
