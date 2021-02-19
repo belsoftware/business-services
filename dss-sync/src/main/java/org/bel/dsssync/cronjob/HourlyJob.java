@@ -43,28 +43,35 @@ public class HourlyJob implements Job {
 	@Value("${egov.searcher.endpoint}")
 	public String searcherEndpoint;
 	
-	private int totalCitizensRegistered=0;
-	
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) {
 		log.info(" esignMaxTimeMilli ");
-		List<Map<String, Object>> dataCitizens = getRainmakerData();
+		int totalCitizensRegistered=0;
+		List<Map<String, Object>> dataCitizens = getRainmakerData("citizensRegistered");
 		for (Map<String, Object> record : dataCitizens) {
 				if (record.get("day").equals("Week0")) {
 					totalCitizensRegistered = (int)Math.round( (Double)record.get("count"));
 				}
 		}
-		log.info("totalCitizensRegistered : "+totalCitizensRegistered);
 		JsonObject  jsonObject = new JsonObject();
 		jsonObject.addProperty("citizenCount", totalCitizensRegistered);
-		dssservice.putToElasticSearch("dss-citizen-count", "_doc", "1", jsonObject);
+		jsonObject.addProperty("tenantId", "all");
+		dssservice.putToElasticSearch("dss-citizen-count", "_doc", "all", jsonObject);
+		
+		List<Map<String, Object>> dataCitizensTenant = getRainmakerData("citizensRegisteredInTenant");
+		for (Map<String, Object> record : dataCitizensTenant) {
+			JsonObject jsonObjectTenant = new JsonObject();
+			jsonObjectTenant.addProperty("citizenCount", (int) Math.round((Double) record.get("count")));
+			jsonObjectTenant.addProperty("tenantId", (String) record.get("tenantid"));
+			dssservice.putToElasticSearch("dss-citizen-count", "_doc", (String) record.get("tenantid"), jsonObjectTenant);
+		}
 	}
 	
-	public List<Map<String, Object>> getRainmakerData() {
+	public List<Map<String, Object>> getRainmakerData(String defName) {
 		StringBuilder uri = new StringBuilder();
 		ObjectMapper mapper = new ObjectMapper();
 		List<Map<String, Object>> data = new ArrayList<>();
-		SearcherRequest request = preparePlainSearchReq(uri);
+		SearcherRequest request = preparePlainSearchReq(uri, defName);
 		Optional<Object> response = fetchResult(uri, request);
 		try {
 			if(response.isPresent()) {
@@ -82,8 +89,10 @@ public class HourlyJob implements Job {
 
 	}
 	
-	public SearcherRequest preparePlainSearchReq(StringBuilder uri) {
-		uri.append(searcherHost+searcherEndpoint);
+	public SearcherRequest preparePlainSearchReq(StringBuilder uri, String defName) {
+		uri.append(searcherHost);
+		String endPoint = searcherEndpoint.replace("{searchName}", defName);
+		uri.append(endPoint);
 		HashMap<String, Object> param = new HashMap<>();
 		param.put("intervalinsecs",604800000 );
 		SearcherRequest searcherRequest = SearcherRequest.builder().requestInfo(new RequestInfo()).searchCriteria(param)
