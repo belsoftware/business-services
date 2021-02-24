@@ -1,5 +1,6 @@
 package org.egov.hrms.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,10 +13,11 @@ import org.egov.hrms.producer.HRMSProducer;
 import org.egov.hrms.repository.RestCallRepository;
 import org.egov.hrms.utils.HRMSConstants;
 import org.egov.hrms.web.contract.EmployeeRequest;
-import org.egov.hrms.web.contract.RequestInfoWrapper;
+import org.egov.hrms.web.contract.RequestInfoWrapper; 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.jayway.jsonpath.JsonPath;
 
@@ -43,6 +45,8 @@ public class NotificationService {
 	@Value("${egov.localization.search.endpoint}")
 	private String localizationSearchEndpoint;
 
+	
+	
 	/**
 	 * Sends notification by putting the sms content onto the core-sms topic
 	 * 
@@ -56,8 +60,13 @@ public class NotificationService {
 			return;
 		}
 		for(Employee employee: request.getEmployees()) {
+			String templateId = null;
+			if(message!=null && message.contains(HRMSConstants.MESSAGE_SEPERATOR)) {
+				templateId = message.split(HRMSConstants.MESSAGE_SEPERATOR,2)[0];
+				message = message.split(HRMSConstants.MESSAGE_SEPERATOR,2)[1];
+			}
 			message = buildMessage(employee, message, pwdMap);
-			SMSRequest smsRequest = SMSRequest.builder().mobileNumber(employee.getUser().getMobileNumber()).message(message).build();
+			SMSRequest smsRequest = SMSRequest.builder().mobileNumber(employee.getUser().getMobileNumber()).message(message).templateId(templateId).build();
 			producer.push(smsTopic, smsRequest);
 		}
 	}
@@ -110,22 +119,51 @@ public class NotificationService {
 				.append("&module=" + module).append("&locale=" + locale);
 		List<String> codes = null;
 		List<String> messages = null;
+		List<String> templateIds = null;
 		Object result = null;
 		try {
 			result = repository.fetchResult(uri, requestInfoWrapper);
 			codes = JsonPath.read(result, HRMSConstants.HRMS_LOCALIZATION_CODES_JSONPATH);
 			messages = JsonPath.read(result, HRMSConstants.HRMS_LOCALIZATION_MSGS_JSONPATH);
+			if(!CollectionUtils.isEmpty(codes)) {
+				templateIds = new ArrayList<String>();
+				for (String code : codes) {
+					templateIds.add(getMessageTemplateId(code, result));
+				}
+			}
 		} catch (Exception e) {
 			log.error("Exception while fetching from localization: " + e);
 		}
 		if (null != result) {
 			for (int i = 0; i < codes.size(); i++) {
-				mapOfCodesAndMessages.put(codes.get(i), messages.get(i));
+				String message =messages.get(i);
+				if(templateIds.get(i)!=null) {
+					message = templateIds.get(i)+HRMSConstants.MESSAGE_SEPERATOR + messages.get(i);
+				}
+				mapOfCodesAndMessages.put(codes.get(i), message);
 			}
 			localizedMessageMap.put(locale + "|" + tenantId, mapOfCodesAndMessages);
 		}
 		
 		return localizedMessageMap;
+	}
+	
+    
+    
+
+	private String getMessageTemplateId(String notificationCode, Object localizationMessage) {
+		String path = "$..messages[?(@.code==\"{}\")].templateId";
+		path = path.replace("{}", notificationCode);
+		String templateid = null;
+		try {
+			ArrayList<String> messageObj = (ArrayList<String>) JsonPath.parse(localizationMessage).read(path);
+			if (!CollectionUtils.isEmpty(messageObj)) {
+				templateid = ((ArrayList<String>) messageObj).get(0);
+			}
+		} catch (Exception e) {
+			log.warn("Unable to fetch template id ", e);
+		}
+		return templateid;
 	}
 
 }
