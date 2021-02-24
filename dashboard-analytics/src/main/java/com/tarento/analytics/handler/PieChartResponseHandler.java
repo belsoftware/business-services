@@ -234,6 +234,7 @@ public class PieChartResponseHandler implements IResponseHandler {
     		{ "REJECTED", " Rejected" },
     		{ "EXPIRED", " Expired" },
     		{ "CANCELLED", " Cancelled" },
+    		{ "CITIZENACTIONREQUIRED", " Citizen Review" },
     		
     		{ "ASSREV", " Assigned Revenues and Compensations" },
     		{ "SALE", " Sale and Hire Charges" },
