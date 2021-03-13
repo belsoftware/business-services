@@ -140,7 +140,6 @@ public class EnrichmentServiceImpl implements EnrichmentService {
 					if(domainNode != null){
 						Object transDomainResponse = enrichTransform.transform(domainNode, businessTypeVal.toString());
 						incomingData.put("domainObject", transDomainResponse);
-						LOGGER.info("Check "+domainNode + transDomainResponse.toString());
 
 					} else {
 						LOGGER.info("Fetching record from ES for domain:: {} failed ",  businessTypeVal);
