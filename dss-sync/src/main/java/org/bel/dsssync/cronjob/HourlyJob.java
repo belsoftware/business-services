@@ -33,6 +33,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonObject;
 import com.jayway.jsonpath.JsonPath;
 
@@ -167,7 +168,7 @@ public class HourlyJob implements Job {
 			headers.set("TOKEN", token);
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
 			//response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
-			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, String.class);
+			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
 			log.info(""+response);
 		} catch (HttpClientErrorException e) {
 			log.error("External Service threw an Exception: ", e);
@@ -202,15 +203,22 @@ public class HourlyJob implements Job {
 	
 	public String orsIntegration(String fromDate, String toDate) {
 		String result = "Failure";
-		JsonObject request = new JsonObject();
-		request.addProperty("appointment_from_date", fromDate);
-		request.addProperty("appointment_to_date", toDate);
-		request.addProperty("user_name", userName);
-		request.addProperty("password", password);
-		request.addProperty("hospital_type_id", 9);
+		/*
+		 * JsonObject request = new JsonObject();
+		 * request.addProperty("appointment_from_date", fromDate);
+		 * request.addProperty("appointment_to_date", toDate);
+		 * request.addProperty("user_name", userName); request.addProperty("password",
+		 * password); request.addProperty("hospital_type_id", 9);
+		 */
 		List<Map<String, Object>> data = new ArrayList<>();
 		StringBuilder url = new StringBuilder(uri);
-		Optional<Object> response = fetchResultHeader(url, request);
+		ObjectNode rootNode = mapper.createObjectNode();
+		rootNode.put("appointment_from_date", fromDate);
+		rootNode.put("appointment_to_date", toDate);
+		rootNode.put("user_name", userName);
+		rootNode.put("password", password);
+		rootNode.put("hospital_type_id", 9);
+		Optional<Object> response = fetchResultHeader(url, rootNode);
 		try {
 			if (response.isPresent()) {
 				log.info("NIC O/P 1 : "+response);
