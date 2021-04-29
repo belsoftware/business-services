@@ -3,6 +3,7 @@ package org.bel.dsssync.cronjob;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -168,6 +169,8 @@ public class HourlyJob implements Job {
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("TOKEN", token);
 			headers.setContentType(MediaType.APPLICATION_JSON);
+			headers.setAccept(Arrays.asList(MediaType.ALL));
+			headers.set("Accept-Encoding","*");
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
 			//response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
 			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
