@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -165,8 +166,9 @@ public class HourlyJob implements Job {
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("TOKEN", token);
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
-			restTemplate.postForObject(uri.toString(), entity, String.class); 
-			response = restTemplate.postForObject(uri.toString(), request, JsonNode.class);
+			//response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
+			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, String.class);
+			log.info(""+response);
 		} catch (HttpClientErrorException e) {
 			log.error("External Service threw an Exception: ", e);
 			throw new ServiceCallException(e.getResponseBodyAsString());
@@ -211,9 +213,11 @@ public class HourlyJob implements Job {
 		Optional<Object> response = fetchResultHeader(url, request);
 		try {
 			if (response.isPresent()) {
+				log.info("NIC O/P 1 : "+response);
 				Object parsedResponse = mapper.convertValue(response.get(), Map.class);
 				List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(parsedResponse, "$.applist"),
 						List.class);
+				log.info("2 : "+response);
 				for (Object record : dataParsedToList) {
 					data.add(mapper.convertValue(record, Map.class));
 				}
