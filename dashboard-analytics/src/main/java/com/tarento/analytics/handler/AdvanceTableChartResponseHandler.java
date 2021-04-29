@@ -46,6 +46,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
         String plotLabel = chartNode.get(PLOT_LABEL).asText();
         JsonNode computedFields = chartNode.get(COMPUTED_FIELDS);
         JsonNode excludedFields = chartNode.get(EXCLUDED_COLUMNS);
+        String forceFormat = chartNode.get(FORCEFORMAT) != null ? chartNode.get(FORCEFORMAT).asText() : null;
 
         boolean executeComputedFields = computedFields !=null && computedFields.isArray();
         List<JsonNode> aggrNodes = aggregationNode.findValues(BUCKETS);
@@ -69,10 +70,10 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
 
                 //If aggrPath is specified.
                 if(aggrsPaths.size()>0){
-                    processWithSpecifiedKeys(aggrsPaths, bucket, mappings, key, plotMap);
+                    processWithSpecifiedKeys(aggrsPaths, bucket, mappings, key, plotMap, forceFormat);
 
                 } else {
-                    processNestedObjects(bucket, mappings, key, plotMap);
+                    processNestedObjects(bucket, mappings, key, plotMap, forceFormat);
                 }
 
                 if (plotMap.size() > 0) {
@@ -141,10 +142,10 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
      * @param headerName
      * @param plotMap
      */
-    private void process(JsonNode bucketNode, Map<String, Map<String, Plot>> mappings, String key, String headerName, Map<String, Plot> plotMap){
+    private void process(JsonNode bucketNode, Map<String, Map<String, Plot>> mappings, String key, String headerName, Map<String, Plot> plotMap, String forceFormat){
         JsonNode valNode = bucketNode.findValue(VALUE) != null ? bucketNode.findValue(VALUE) : bucketNode.findValue(DOC_COUNT);
         Double value = valNode.isDouble() ? valNode.asDouble() : valNode.asInt();
-        String dataType = valNode.isDouble() ? "amount" : "number"; // to move to config or constants
+        String dataType = forceFormat != null ? forceFormat : (valNode.isDouble() ? "amount" : "number"); // to move to config or constants
         //String headerName = bucketNode.findValue(KEY).asText();
         Plot plot = new Plot(headerName, value, dataType);
 
@@ -164,7 +165,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
      * @param key
      * @param plotMap
      */
-    private void processNestedObjects(JsonNode node, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap ){
+    private void processNestedObjects(JsonNode node, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap, String forceFormat ){
 
         Iterator<String> fieldNames = node.fieldNames();
         while(fieldNames.hasNext()) {
@@ -172,14 +173,14 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
             if(node.get(fieldName).isArray()){
                 ArrayNode bucketNodes = (ArrayNode) node.get(fieldName);
                 bucketNodes.forEach(bucketNode -> {
-                    process(bucketNode, mappings, key, bucketNode.findValue(KEY).asText() , plotMap);
+                    process(bucketNode, mappings, key, bucketNode.findValue(KEY).asText() , plotMap, forceFormat);
                 });
 
             } else if(node.get(fieldName).isObject() && node.get(fieldName).get(VALUE)!=null){
-                process(node.get(fieldName), mappings, key, fieldName , plotMap);
+                process(node.get(fieldName), mappings, key, fieldName , plotMap, forceFormat);
 
             } else {
-                processNestedObjects(node.get(fieldName), mappings, key, plotMap );
+                processNestedObjects(node.get(fieldName), mappings, key, plotMap, forceFormat);
             }
 
         }
@@ -187,7 +188,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
 
     }
 
-    private void processWithSpecifiedKeys(ArrayNode aggrsPaths, JsonNode bucket, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap ){
+    private void processWithSpecifiedKeys(ArrayNode aggrsPaths, JsonNode bucket, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap, String forceFormat ){
 
         aggrsPaths.forEach(headerPath -> {
             JsonNode valueNode = bucket.findValue(headerPath.asText());
@@ -196,8 +197,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
             if(valueNode!=null)
                 doc_value = (null == valueNode.findValue(DOC_COUNT)) ? 0.0 : valueNode.findValue(DOC_COUNT).asDouble();
             Double value = (null == valueNode || null == valueNode.findValue(VALUE)) ? doc_value : valueNode.findValue(VALUE).asDouble();
-            String dataType = valueNode.findValue(VALUE)!=null? (valueNode.findValue(VALUE).isDouble() ? "amount" : "number") : "number" ;
-
+            String dataType = (forceFormat!=null)? forceFormat : (valueNode.findValue(VALUE)!=null? (valueNode.findValue(VALUE).isDouble() ? "amount" : "number") : "number");
             Plot plot = new Plot(headerPath.asText(), value, dataType);
             if (mappings.containsKey(key)) {
                 double newval = mappings.get(key).get(headerPath.asText()) == null ? value : (mappings.get(key).get(headerPath.asText()).getValue() + value);
