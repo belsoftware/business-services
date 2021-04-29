@@ -83,6 +83,9 @@ public class SearchCriteria {
 	@JsonProperty("termNo")
 	private String termNo;
 	
+    private String fromDateStr;
+
+    private String toDateStr;
 	
 	@Override
 	public String toString() {

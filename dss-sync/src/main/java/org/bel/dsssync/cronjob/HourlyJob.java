@@ -3,9 +3,9 @@ package org.bel.dsssync.cronjob;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +13,10 @@ import java.util.Optional;
 import org.bel.dsssync.model.SearcherRequest;
 import org.bel.dsssync.service.DssSyncService;
 import org.egov.common.contract.request.RequestInfo;
+import org.egov.mdms.model.MasterDetail;
+import org.egov.mdms.model.MdmsCriteria;
+import org.egov.mdms.model.MdmsCriteriaReq;
+import org.egov.mdms.model.ModuleDetail;
 import org.egov.tracer.model.CustomException;
 import org.egov.tracer.model.ServiceCallException;
 import org.quartz.Job;
@@ -21,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -43,6 +46,9 @@ public class HourlyJob implements Job {
 
 	@Autowired
 	DssSyncService dssservice;
+	
+	@Autowired
+	ObjectMapper mapper;
 	
 	@Value("${egov.searcher.host}")
 	public String searcherHost;
@@ -67,6 +73,10 @@ public class HourlyJob implements Job {
 
     @Value("${egov.mdms.search.endpoint}")
     private String mdmsEndPoint;
+    
+    public static final String jsonpath="$.MdmsRes.ORS.HospitalMapping";
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd");
 	
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) {
@@ -91,60 +101,19 @@ public class HourlyJob implements Job {
 			dssservice.putToElasticSearch("dss-citizen-count", "_doc", (String) record.get("tenantid"), jsonObjectTenant);
 		}
 		
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd");
-		ObjectMapper mapper = new ObjectMapper();
-		
-		//String json = "{\"applist\":[{\"successful_appointment\":\"3\",\"male_successful_appointment\":\"1\",\"status_code\":\"1\",\"female_successful_appointment\":\"2\",\"appointment_date\":\"2021-03-16\",\"chhawani_resident_successful_appointment\":\"0\",\"hospital_id\":\"91070526\",\"chhawani_nonresident_successful_appointment\":\"3\",\"hospital_name\":\"Cantonment General Hospital,  Delhi Cantt\",\"failed_appointment\":\"0\"},{\"successful_appointment\":\"2\",\"male_successful_appointment\":\"2\",\"status_code\":\"1\",\"female_successful_appointment\":\"0\",\"appointment_date\":\"2021-03-16\",\"chhawani_resident_successful_appointment\":\"0\",\"hospital_id\":\"34037\",\"chhawani_nonresident_successful_appointment\":\"2\",\"hospital_name\":\"Cantonment General Hospital Lucknow Cantt\",\"failed_appointment\":\"0\"}]}";
-		//List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(json, "$.applist"), List.class);
-		
-		JsonObject request = new JsonObject();
-		request.addProperty("appointment_from_date", sdf.format(new Date()));
-		request.addProperty("appointment_to_date", sdf.format(new Date()));
-		request.addProperty("user_name", userName);
-		request.addProperty("password", password);
-		request.addProperty("hospital_type_id", 9);
-		List<Map<String, Object>> data = new ArrayList<>();
-		StringBuilder url= new StringBuilder(uri);
-		Optional<Object> response = fetchResultHeader(url, request);
-		try {
-			if(response.isPresent()) {
-				Object parsedResponse = mapper.convertValue(response.get(), Map.class);
-				List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(parsedResponse, "$.applist"), List.class);
-				for (Object record : dataParsedToList) {
-					data.add(mapper.convertValue(record, Map.class));
-				}
-			}
-
-		} catch (Exception e) {
-			throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to retrieve data from the ORS System");
-		}
-		
-		for (Map<String, Object> record : data) {
-			String identifier=((String) record.get("hospital_id"))
-					+"_"+((String) record.get("male_successful_appointment"));
-			record.put("successful_appointment",Integer.parseInt((String) record.get("successful_appointment")));
-			record.put("male_successful_appointment",Integer.parseInt((String) record.get("male_successful_appointment")));
-			record.put("female_successful_appointment",Integer.parseInt((String) record.get("female_successful_appointment")));
-			record.put("chhawani_resident_successful_appointment",Integer.parseInt((String) record.get("chhawani_resident_successful_appointment")));
-			record.put("chhawani_nonresident_successful_appointment",Integer.parseInt((String) record.get("chhawani_nonresident_successful_appointment")));
-			try {
-				record.put("appointment_date",sdf.parse((String) record.get("appointment_date")).getTime());
-			} catch (ParseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			record.put("tenantId","pb.agra");
-			
-			//dssservice.putToElasticSearch("orsindex-v1", "general", identifier, jsonObject);
-		}
-		for (Map<String, Object> record : data) {
-			log.info(""+record);
-		}
+		orsIntegration(sdf.format(new Date()), sdf.format(new Date()));
+	}
+	
+	private ModuleDetail getORSMappingRequest(String id) {
+		List<MasterDetail> masterDetails = new ArrayList<>();
+		masterDetails.add(MasterDetail.builder().name("HospitalMapping").filter("[?(@.id == "+id+")]").build());
+		ModuleDetail moduleDtls = ModuleDetail.builder().masterDetails(masterDetails)
+				.moduleName("ORS").build();
+		return moduleDtls;
 	}
 	
 	public List<Map<String, Object>> getRainmakerData(String defName) {
 		StringBuilder uri = new StringBuilder();
-		ObjectMapper mapper = new ObjectMapper();
 		List<Map<String, Object>> data = new ArrayList<>();
 		SearcherRequest request = preparePlainSearchReq(uri, defName);
 		Optional<Object> response = fetchResult(uri, request);
@@ -176,8 +145,6 @@ public class HourlyJob implements Job {
 	}
 	
 	public Optional<Object> fetchResult(StringBuilder uri, Object request) {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 		Object response = null;
 		try {
 			response = restTemplate.postForObject(uri.toString(), request, JsonNode.class);
@@ -193,8 +160,6 @@ public class HourlyJob implements Job {
 	}
 	
 	public Optional<Object> fetchResultHeader(StringBuilder uri, Object request) {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 		Object response = null;
 		try {
 			HttpHeaders headers = new HttpHeaders();
@@ -211,5 +176,101 @@ public class HourlyJob implements Job {
 
 		return Optional.ofNullable(response);
 
+	}
+	
+	private Optional<Object> fetchResultMapping(StringBuilder uri, Object request) {
+
+		Object response = null;
+		log.info("URI: "+uri.toString());
+		try {
+			//RestTemplate restTemplate = new RestTemplate();
+			log.info("Request: "+mapper.writeValueAsString(request));
+			response = restTemplate.postForObject(uri.toString(), request, Map.class);
+		} catch (HttpClientErrorException e) {
+			
+			//log.error("External Service threw an Exception: ", e);
+			throw new ServiceCallException(e.getResponseBodyAsString());
+		} catch (Exception e) {
+			e.printStackTrace();
+			//log.error("Exception while fetching from external service: ", e);
+			throw new CustomException("REST_CALL_EXCEPTION : "+uri.toString(),e.getMessage());
+		}
+		return Optional.ofNullable(response);
+	}
+	
+	public String orsIntegration(String fromDate, String toDate) {
+		String result = "Failure";
+		JsonObject request = new JsonObject();
+		request.addProperty("appointment_from_date", fromDate);
+		request.addProperty("appointment_to_date", toDate);
+		request.addProperty("user_name", userName);
+		request.addProperty("password", password);
+		request.addProperty("hospital_type_id", 9);
+		List<Map<String, Object>> data = new ArrayList<>();
+		StringBuilder url = new StringBuilder(uri);
+		Optional<Object> response = fetchResultHeader(url, request);
+		try {
+			if (response.isPresent()) {
+				Object parsedResponse = mapper.convertValue(response.get(), Map.class);
+				List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(parsedResponse, "$.applist"),
+						List.class);
+				for (Object record : dataParsedToList) {
+					data.add(mapper.convertValue(record, Map.class));
+				}
+			}
+
+		} catch (Exception e) {
+			throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to retrieve data from the ORS System");
+		}
+
+		for (Map<String, Object> record : data) {
+			String identifier = ((String) record.get("hospital_id")) + "_"
+					+ ((String) record.get("male_successful_appointment"));
+			record.put("successful_appointment", Integer.parseInt((String) record.get("successful_appointment")));
+			record.put("male_successful_appointment",
+					Integer.parseInt((String) record.get("male_successful_appointment")));
+			record.put("female_successful_appointment",
+					Integer.parseInt((String) record.get("female_successful_appointment")));
+			record.put("chhawani_resident_successful_appointment",
+					Integer.parseInt((String) record.get("chhawani_resident_successful_appointment")));
+			record.put("chhawani_nonresident_successful_appointment",
+					Integer.parseInt((String) record.get("chhawani_nonresident_successful_appointment")));
+			try {
+				record.put("appointment_date", sdf.parse((String) record.get("appointment_date")).getTime());
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				throw new CustomException("INVALID_DATA", "INVALID DATA");
+			}
+
+			ModuleDetail orsMappingRequest = getORSMappingRequest((String) record.get("hospital_id"));
+			List<ModuleDetail> moduleDetails = new LinkedList<>();
+			moduleDetails.add(orsMappingRequest);
+			MdmsCriteria mdmsCriteria = MdmsCriteria.builder().moduleDetails(moduleDetails).tenantId("pb").build();
+			MdmsCriteriaReq mdmsCriteriaReq = MdmsCriteriaReq.builder().mdmsCriteria(mdmsCriteria)
+					.requestInfo(RequestInfo.builder().build()).build();
+
+			StringBuilder mdmsUrl = new StringBuilder().append(mdmsHost).append(mdmsEndPoint);
+
+			Optional<Object> responseMapping = fetchResultMapping(mdmsUrl, mdmsCriteriaReq);
+			try {
+				if (responseMapping.isPresent()) {
+					List<Map<String, Object>> ab = JsonPath.read(responseMapping.get(), jsonpath);
+					log.info("" + ab.get(0).get("cb"));
+					record.put("tenantId", ab.get(0).get("cb"));
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to retrieve data");
+			}
+			// dssservice.putToElasticSearch("orsindex-v1", "general", identifier,
+			// jsonObject);
+		}
+		for (Map<String, Object> record : data) {
+			log.info("" + record);
+		}
+		result= "Success";
+		return result;
 	}
 }
