@@ -173,7 +173,7 @@ public class HourlyJob implements Job {
 			headers.set("Accept-Encoding","*");
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
 			//response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
-			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
+			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, String.class);
 			log.info(""+response);
 		} catch (HttpClientErrorException e) {
 			e.printStackTrace();
