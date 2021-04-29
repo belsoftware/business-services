@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -166,14 +167,17 @@ public class HourlyJob implements Job {
 		try {
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("TOKEN", token);
+			headers.setContentType(MediaType.APPLICATION_JSON);
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
 			//response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
 			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
 			log.info(""+response);
 		} catch (HttpClientErrorException e) {
-			log.error("External Service threw an Exception: ", e);
+			e.printStackTrace();
+			log.error("External Service threw an Exception: ", e.getResponseBodyAsString());
 			throw new ServiceCallException(e.getResponseBodyAsString());
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.error("Exception while fetching from external service: ", e);
 		}
 
