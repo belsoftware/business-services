@@ -46,6 +46,9 @@ public class HourlyJob implements Job {
 	
 	@Autowired
 	RestTemplate restTemplate;
+	
+	@Autowired
+	RestTemplate restTemplateORS;
 
 	@Autowired
 	DssSyncService dssservice;
@@ -173,8 +176,8 @@ public class HourlyJob implements Job {
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
 			MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
 			converter.setSupportedMediaTypes(Arrays.asList(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON));
-			restTemplate.getMessageConverters().add(0, converter);
-			response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
+			restTemplateORS.getMessageConverters().add(0, converter);
+			response = restTemplateORS.postForObject(uri.toString(), entity, JsonNode.class); 
 			//response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
 			log.info(""+response);
 		} catch (HttpClientErrorException e) {

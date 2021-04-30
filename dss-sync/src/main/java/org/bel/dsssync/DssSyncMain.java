@@ -1,7 +1,6 @@
 package org.bel.dsssync;
 
 
-import java.util.Collections;
 import java.util.TimeZone;
 
 import org.egov.tracer.config.TracerConfiguration;
@@ -11,8 +10,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -33,6 +30,7 @@ public class DssSyncMain {
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .setTimeZone(TimeZone.getTimeZone(timeZone));
     }
+
 
     public static void main(String[] args) throws Exception {
         SpringApplication.run(DssSyncMain.class, args);
