@@ -247,25 +247,34 @@ public class HourlyJob implements Job {
 		}
 
 		for (Map<String, Object> record : data) {
+			JsonObject jsonObject = new JsonObject();
 			String identifier = ((String) record.get("hospital_id")) + "_"
 					+ ((String) record.get("male_successful_appointment"));
-			record.put("successful_appointment", Integer.parseInt((String) record.get("successful_appointment")));
-			record.put("male_successful_appointment",
+			jsonObject.addProperty("successful_appointment", Integer.parseInt((String) record.get("successful_appointment")));
+			jsonObject.addProperty("male_successful_appointment",
 					Integer.parseInt((String) record.get("male_successful_appointment")));
-			record.put("female_successful_appointment",
+			jsonObject.addProperty("female_successful_appointment",
 					Integer.parseInt((String) record.get("female_successful_appointment")));
-			record.put("chhawani_resident_successful_appointment",
+			jsonObject.addProperty("chhawani_resident_successful_appointment",
 					Integer.parseInt((String) record.get("chhawani_resident_successful_appointment")));
-			record.put("chhawani_nonresident_successful_appointment",
+			jsonObject.addProperty("chhawani_nonresident_successful_appointment",
 					Integer.parseInt((String) record.get("chhawani_nonresident_successful_appointment")));
+			jsonObject.addProperty("status_code",
+					(String) record.get("status_code"));
+			jsonObject.addProperty("hospital_id",
+					(String) record.get("hospital_id"));
+			jsonObject.addProperty("hospital_name",
+					(String) record.get("hospital_name"));
+			jsonObject.addProperty("failed_appointment",
+					Integer.parseInt((String) record.get("failed_appointment")));
 			try {
-				record.put("appointment_date", sdf.parse((String) record.get("appointment_date")).getTime());
+				jsonObject.addProperty("appointment_date", sdf.parse((String) record.get("appointment_date")).getTime());
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				throw new CustomException("INVALID_DATA", "INVALID DATA");
 			}
-
+			
 			ModuleDetail orsMappingRequest = getORSMappingRequest((String) record.get("hospital_id"));
 			List<ModuleDetail> moduleDetails = new LinkedList<>();
 			moduleDetails.add(orsMappingRequest);
@@ -280,15 +289,16 @@ public class HourlyJob implements Job {
 				if (responseMapping.isPresent()) {
 					List<Map<String, Object>> ab = JsonPath.read(responseMapping.get(), jsonpath);
 					log.info("" + ab.get(0).get("cb"));
-					record.put("tenantId", ab.get(0).get("cb"));
+					if(ab.size()>0)
+						jsonObject.addProperty("tenantId", (String)ab.get(0).get("cb"));
 				}
 
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to retrieve data");
 			}
-			// dssservice.putToElasticSearch("orsindex-v1", "general", identifier,
-			// jsonObject);
+			
+			dssservice.putToElasticSearch("orsindex-v1", "general", identifier,jsonObject);
 		}
 		for (Map<String, Object> record : data) {
 			log.info("" + record);
