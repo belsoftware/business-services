@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -34,7 +33,6 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonObject;
 import com.jayway.jsonpath.JsonPath;
@@ -164,7 +162,7 @@ public class HourlyJob implements Job {
 	}
 	
 	public Optional<Object> fetchResultHeader(StringBuilder uri, Object request) {
-		Object response = null;
+		JsonNode response = null;
 		try {
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("TOKEN", token);
@@ -172,8 +170,8 @@ public class HourlyJob implements Job {
 			headers.setAccept(Arrays.asList(MediaType.ALL));
 			headers.set("Accept-Encoding","*");
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
-			//response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
-			response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, String.class);
+			response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
+			//response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
 			log.info(""+response);
 		} catch (HttpClientErrorException e) {
 			e.printStackTrace();
@@ -239,6 +237,7 @@ public class HourlyJob implements Job {
 			}
 
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to retrieve data from the ORS System");
 		}
 
