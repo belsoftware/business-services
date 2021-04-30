@@ -235,7 +235,6 @@ public class HourlyJob implements Job {
 				Object parsedResponse = mapper.convertValue(response.get(), Map.class);
 				List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(parsedResponse, "$.applist"),
 						List.class);
-				log.info("2 : "+response);
 				for (Object record : dataParsedToList) {
 					data.add(mapper.convertValue(record, Map.class));
 				}
@@ -249,7 +248,7 @@ public class HourlyJob implements Job {
 		for (Map<String, Object> record : data) {
 			JsonObject jsonObject = new JsonObject();
 			String identifier = ((String) record.get("hospital_id")) + "_"
-					+ ((String) record.get("male_successful_appointment"));
+					+ ((String) record.get("appointment_date"));
 			jsonObject.addProperty("successful_appointment", Integer.parseInt((String) record.get("successful_appointment")));
 			jsonObject.addProperty("male_successful_appointment",
 					Integer.parseInt((String) record.get("male_successful_appointment")));
@@ -299,9 +298,6 @@ public class HourlyJob implements Job {
 			}
 			
 			dssservice.putToElasticSearch("orsindex-v1", "general", identifier,jsonObject);
-		}
-		for (Map<String, Object> record : data) {
-			log.info("" + record);
 		}
 		result= "Success";
 		return result;
