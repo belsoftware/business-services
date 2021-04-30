@@ -166,7 +166,7 @@ public class HourlyJob implements Job {
 		try {
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("TOKEN", token);
-			headers.setContentType(MediaType.APPLICATION_JSON);
+			headers.setContentType(MediaType.TEXT_PLAIN);
 			headers.setAccept(Arrays.asList(MediaType.ALL));
 			headers.set("Accept-Encoding","*");
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
