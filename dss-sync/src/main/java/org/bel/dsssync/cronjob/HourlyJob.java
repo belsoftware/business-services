@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -170,6 +171,9 @@ public class HourlyJob implements Job {
 			headers.setAccept(Arrays.asList(MediaType.ALL));
 			headers.set("Accept-Encoding","*");
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
+			MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+			converter.setSupportedMediaTypes(Arrays.asList(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON));
+			restTemplate.getMessageConverters().add(0, converter);
 			response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
 			//response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
 			log.info(""+response);
