@@ -79,7 +79,7 @@ public class HourlyJob implements Job {
     
     public static final String jsonpath="$.MdmsRes.ORS.HospitalMapping";
     
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd");
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 	
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) {
