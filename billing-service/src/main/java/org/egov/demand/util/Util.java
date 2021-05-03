@@ -53,6 +53,10 @@ public class Util {
 
 	@Autowired
 	private ApplicationProperties appProps;
+	private static final String BUSINESSSERVICE_MDMS_MODULE = "BillingService";
+	public static final List<String> BUSINESSSERVICE_MDMS_MASTER = Arrays.asList("BusinessService");
+	public static final String BUSINESSSERVICE_CODES_FILTER = "$.[?(@.type=='Adhoc')].code";
+	public static final String BUSINESSSERVICE_CODES_JSONPATH = "$.MdmsRes.BillingService.BusinessService[?(@.type=='Adhoc')].code";
 	
 	@Autowired
 	private ObjectMapper mapper;
@@ -364,5 +368,22 @@ public class Util {
 			preparedStmtList.add(id);
 		});
 	}
+	
+	public List<String> fetchBusinessServiceFromMDMS(RequestInfo requestInfo, String tenantId){
+		MdmsCriteriaReq mdmsCriteriaReq =prepareMdMsRequest(tenantId,BUSINESSSERVICE_MDMS_MODULE, BUSINESSSERVICE_MDMS_MASTER, BUSINESSSERVICE_CODES_FILTER, requestInfo);
+		StringBuilder uri = new StringBuilder(appProps.getMdmsHost()).append(appProps.getMdmsEndpoint());
+		List<String> masterdata = new ArrayList<>();
+		
+		try {
+			Object response = serviceRequestRepository.fetchResult(uri.toString(), mdmsCriteriaReq);
+			masterdata = JsonPath.read(response, BUSINESSSERVICE_CODES_JSONPATH);
+		}
+		catch(Exception e) {
+			log.error("Exception while fetching business service codes: ",e);
+		}
+		return masterdata;
+		
+	}
+	
 	
 }

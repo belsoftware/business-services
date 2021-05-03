@@ -52,6 +52,7 @@ import static org.egov.demand.util.Constants.URL_PARAMS_FOR_SERVICE_BASED_DEMAND
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -357,6 +358,14 @@ public class BillServicev2 {
 				minimumAmtPayableForBill = minimumAmtPayableForBill.add(demand.getMinimumAmountPayable());
 				String billDetailId = UUID.randomUUID().toString();
 				BillDetailV2 billDetail = getBillDetailForDemand(demand, taxHeadMap, billDetailId);
+				List<String> adhocServices = util.fetchBusinessServiceFromMDMS(requestInfo, tenantId);
+				if(adhocServices.contains(business.getCode())) {
+					Calendar calendar = Calendar.getInstance();
+					calendar.setTime(new Date());
+					calendar.add(Calendar.YEAR, 10);
+					
+					billDetail.setExpiryDate(calendar.getTimeInMillis());
+				}
 				billDetail.setBillId(billId);
 				billDetail.setId(billDetailId);
 				billDetails.add(billDetail);
