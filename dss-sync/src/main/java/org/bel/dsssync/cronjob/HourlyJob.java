@@ -173,9 +173,10 @@ public class HourlyJob implements Job {
 			HttpEntity<Object> entity = new HttpEntity<>(request, headers);
 			MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
 			converter.setSupportedMediaTypes(Arrays.asList(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON));
-			restTemplate.getMessageConverters().add(0, converter);
-			response = restTemplate.postForObject(uri.toString(), entity, JsonNode.class); 
-			restTemplate.getMessageConverters().remove(converter);
+			RestTemplate rt= new RestTemplate();
+			rt.getMessageConverters().add(0, converter);
+			response = rt.postForObject(uri.toString(), entity, JsonNode.class); 
+			rt.getMessageConverters().remove(converter);
 			//response = restTemplate.exchange(uri.toString(), HttpMethod.POST, entity, JsonNode.class);
 			log.info(""+response);
 		} catch (HttpClientErrorException e) {
@@ -287,9 +288,12 @@ public class HourlyJob implements Job {
 			try {
 				if (responseMapping.isPresent()) {
 					List<Map<String, Object>> ab = JsonPath.read(responseMapping.get(), jsonpath);
-					log.info("" + ab.get(0).get("cb"));
-					if(ab.size()>0)
+					if(ab.size()>0) {
+						log.info("" + ab.get(0).get("cb"));
 						jsonObject.addProperty("tenantId", (String)ab.get(0).get("cb"));
+					}
+					else
+						break;
 				}
 
 			} catch (Exception e) {
