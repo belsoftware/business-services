@@ -221,6 +221,7 @@ public class HourlyJob implements Job {
 		 * request.addProperty("user_name", userName); request.addProperty("password",
 		 * password); request.addProperty("hospital_type_id", 9);
 		 */
+		try {
 		List<Map<String, Object>> data = new ArrayList<>();
 		StringBuilder url = new StringBuilder(uri);
 		ObjectNode rootNode = mapper.createObjectNode();
@@ -234,10 +235,16 @@ public class HourlyJob implements Job {
 			if (response.isPresent()) {
 				log.info("NIC O/P 1 : "+response);
 				Object parsedResponse = mapper.convertValue(response.get(), Map.class);
+				System.out.println("parsedResponse : "+parsedResponse);
+				if(null!=((HashMap<String, String>) parsedResponse).get("applist")){
 				List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(parsedResponse, "$.applist"),
 						List.class);
 				for (Object record : dataParsedToList) {
 					data.add(mapper.convertValue(record, Map.class));
+				}
+				}
+				else {
+					return "Appointment List not found";
 				}
 			}
 
@@ -272,7 +279,7 @@ public class HourlyJob implements Job {
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				throw new CustomException("INVALID_DATA", "INVALID DATA");
+				throw new CustomException("INVALID_DATA", "INVALID APPOINTMENT DATE");
 			}
 			
 			ModuleDetail orsMappingRequest = getORSMappingRequest((String) record.get("hospital_id"));
@@ -288,20 +295,23 @@ public class HourlyJob implements Job {
 			try {
 				if (responseMapping.isPresent()) {
 					List<Map<String, Object>> ab = JsonPath.read(responseMapping.get(), jsonpath);
-					if(ab.size()>0) {
-						log.info("" + ab.get(0).get("cb"));
+					if(ab.size()>0) 
 						jsonObject.addProperty("tenantId", (String)ab.get(0).get("cb"));
-					}
 					else
 						break;
 				}
 
 			} catch (Exception e) {
 				e.printStackTrace();
-				throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to retrieve data");
+				throw new CustomException("DATA_RETREIVAL_FAILED", "Failed to Retrieve MDMS data");
 			}
 			
 			dssservice.putToElasticSearch("orsindex-v1", "general", identifier,jsonObject);
+		}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			return result;
 		}
 		result= "Success";
 		return result;
