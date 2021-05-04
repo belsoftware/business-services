@@ -267,6 +267,9 @@ public class CollectionServiceConstants {
     public static final String BUSINESSSERVICE_LOCALIZATION_MODULE = "rainmaker-uc";
 
     public static final String LOCALIZATION_CODES_JSONPATH = "$.messages.*.code";
+    
+
+	public static final String LOCALIZATION_TEMPLATEID_JSONPATH = "$.messages.*.templateId";
 
     public static final String LOCALIZATION_MSGS_JSONPATH = "$.messages.*.message";
 

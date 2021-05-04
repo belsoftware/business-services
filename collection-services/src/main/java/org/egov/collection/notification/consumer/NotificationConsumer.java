@@ -78,6 +78,14 @@ public class NotificationConsumer {
 	@Value("${kafka.topics.notification.sms.key}")
 	private String smsTopickey;
 
+    // url shortner
+
+    @Value("${egov.url.shortner.host}")
+    private String urlShortnerHost;
+
+    @Value("${egov.url.shortner.endpoint}")
+    private String urlShortnerEndpoint;
+    
 	@Autowired
 	private ObjectMapper objectMapper;
 
@@ -93,6 +101,7 @@ public class NotificationConsumer {
 	public static final String BUSINESSSERVICELOCALIZATION_CODE_PREFIX = "BILLINGSERVICE_BUSINESSSERVICE_";
 	public static final String LOCALIZATION_CODES_JSONPATH = "$.messages.*.code";
 	public static final String LOCALIZATION_MSGS_JSONPATH = "$.messages.*.message";
+	public static final String LOCALIZATION_TEMPLATEID_JSONPATH = "$.messages.*.templateId";
 
 	private static final String BUSINESSSERVICE_MDMS_MODULE = "BillingService";
 	public static final String BUSINESSSERVICE_MDMS_MASTER = "BusinessService";
@@ -132,12 +141,14 @@ public class NotificationConsumer {
 				if (businessServiceAllowed.contains(detail.getBusinessService())) {
 					String phNo = bill.getMobileNumber();
 					String message = buildSmsBody(bill, detail, receiptReq.getRequestInfo());
+					String templateId =fetchTemplateIdFromLocalization(receiptReq.getRequestInfo(), detail.getTenantId(), COLLECTION_LOCALIZATION_MODULE, PAYMENT_MSG_LOCALIZATION_CODE);
 					if (!StringUtils.isEmpty(message)) {
 						Map<String, Object> request = new HashMap<>();
 						request.put("mobileNumber", phNo);
 						request.put("message", message);
+						request.put("templateId", templateId);
 
-						producer.producer(smsTopic, request);
+						producer.producer ( smsTopickey, request);
 					} else {
 						log.error("No message configured! Notification will not be sent.");
 					}
@@ -169,11 +180,11 @@ public class NotificationConsumer {
 			link.append(uiHost + "/citizen").append("/otpLogin?mobileNo=").append(bill.getMobileNumber()).append("&redirectTo=")
 					.append(uiRedirectUrl).append("&params=").append(paymentdetail.getTenantId() + "," + paymentdetail.getReceiptNumber());
 
-			content = content.replaceAll("<rcpt_link>", link.toString());
+			content = content.replaceAll("<rcpt_link>", getShortenedUrl(link.toString()));
 			String taxName = fetchContentFromLocalization(requestInfo, paymentdetail.getTenantId(),
 					BUSINESSSERVICE_LOCALIZATION_MODULE, formatCodes(paymentdetail.getBusinessService()));
 			if(StringUtils.isEmpty(taxName))
-				taxName = "Adhoc Tax";
+				taxName = "Adhoc Fee";
 			content = content.replaceAll("<tax_name>", taxName);
 			content = content.replaceAll("<fin_year>", fetchFinYear(bill.getBillDetails().get(0).getFromPeriod(), bill.getBillDetails().get(0).getToPeriod()));
 			content = content.replaceAll("<rcpt_no>",  paymentdetail.getReceiptNumber());
@@ -219,6 +230,43 @@ public class NotificationConsumer {
 			}
 		}
 		return message;
+	}
+	
+	/**
+	 * Fix : Add template id 
+	 * @param requestInfo
+	 * @param tenantId
+	 * @param module
+	 * @param code
+	 * @return
+	 */
+	private String fetchTemplateIdFromLocalization(RequestInfo requestInfo, String tenantId, String module, String code) {
+		String templateId = null;
+		List<String> codes = new ArrayList<>();
+		List<String> templateIds = new ArrayList<>();
+		Object result = null;
+		String locale = requestInfo.getMsgId().split("[|]")[1]; // Conventionally locale is sent in the first index of msgid split by |
+		if(StringUtils.isEmpty(locale))
+			locale = fallBackLocale;
+		StringBuilder uri = new StringBuilder();
+		uri.append(localizationHost).append(localizationEndpoint);
+		uri.append("?tenantId=").append(tenantId.split("\\.")[0]).append("&locale=").append(locale).append("&module=").append(module);
+		Map<String, Object> request = new HashMap<>();
+		request.put("RequestInfo", requestInfo);
+		try {
+			result = restTemplate.postForObject(uri.toString(), request, Map.class);
+			codes = JsonPath.read(result, LOCALIZATION_CODES_JSONPATH);
+			templateIds = JsonPath.read(result, LOCALIZATION_TEMPLATEID_JSONPATH);
+			if (null != result && !CollectionUtils.isEmpty(codes) && !CollectionUtils.isEmpty(templateIds) && codes.size() == templateIds.size()) {
+				for (int i = 0; i < codes.size(); i++) {
+					if(codes.get(i).equals(code)) templateId = templateIds.get(i);
+				}
+			}
+		} catch (Exception e) {
+			log.error("Exception while fetching from localization: " + e);
+		}
+		
+		return templateId;
 	}
 
 
@@ -291,12 +339,31 @@ public class NotificationConsumer {
 	 * @return
 	 */
 	private String formatCodes(String code) {
-		String regexForSpecialCharacters = "[$&+,:;=?@#|'<>.-^*()%!]";
+		String regexForSpecialCharacters = "[$&+,:;=?@#|'<>.^*()%!-]";
 		code = code.replaceAll(regexForSpecialCharacters, "_");
 		code = code.replaceAll(" ", "_");
 
 		return BUSINESSSERVICELOCALIZATION_CODE_PREFIX + code.toUpperCase();
 	}
 
+	/**
+	 * Method to shortent the url
+	 * returns the same url if shortening fails
+	 * @param url
+	 */
+	public String getShortenedUrl(String url){
+
+		HashMap<String,String> body = new HashMap<>();
+		body.put("url",url);
+		StringBuilder builder = new StringBuilder(this.urlShortnerHost);
+		builder.append(this.urlShortnerEndpoint);
+		String res = restTemplate.postForObject(builder.toString(), body, String.class);
+
+		if(StringUtils.isEmpty(res)){
+			log.error("URL_SHORTENING_ERROR","Unable to shorten url: "+url); ;
+			return url;
+		}
+		else return res;
+	}
 
 }
