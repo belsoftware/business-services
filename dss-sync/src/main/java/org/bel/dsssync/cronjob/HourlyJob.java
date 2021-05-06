@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import org.bel.dsssync.model.SearcherRequest;
 import org.bel.dsssync.service.DssSyncService;
@@ -84,6 +85,7 @@ public class HourlyJob implements Job {
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) {
 		log.info(" dss-sync cron started ");
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		int totalCitizensRegistered=0;
 		List<Map<String, Object>> dataCitizens = getRainmakerData("citizensRegistered");
 		for (Map<String, Object> record : dataCitizens) {
@@ -235,7 +237,6 @@ public class HourlyJob implements Job {
 			if (response.isPresent()) {
 				log.info("NIC O/P 1 : "+response);
 				Object parsedResponse = mapper.convertValue(response.get(), Map.class);
-				System.out.println("parsedResponse : "+parsedResponse);
 				if(null!=((HashMap<String, String>) parsedResponse).get("applist")){
 				List<Object> dataParsedToList = mapper.convertValue(JsonPath.read(parsedResponse, "$.applist"),
 						List.class);
