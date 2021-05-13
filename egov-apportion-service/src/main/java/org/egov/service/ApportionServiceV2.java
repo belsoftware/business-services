@@ -156,8 +156,9 @@ public class ApportionServiceV2 {
         * */
         String businessKey = demands.get(0).getBusinessService();
 
+        //Calling default apportion for demand apportion --Rajani--need to check
         if (isApportionPresent(businessKey))
-            apportion = getApportion(businessKey);
+            apportion = getApportion(DEFAULT);
         else
             apportion = getApportion(DEFAULT);
 
