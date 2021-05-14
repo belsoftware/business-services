@@ -259,7 +259,7 @@ public class OrderByPriority implements ApportionV2 {
 
                 // FIX ME
                 // advance should be checked from purpose
-                if(bucket.getTaxHeadCode().contains("ADVANCE")){
+            	 if(bucket.getAmount().compareTo(BigDecimal.ZERO) < 0){
 
                     BigDecimal net = bucket.getAmount().subtract(bucket.getAdjustedAmount());
                     if(advance.add(net).abs().compareTo(totalPositiveAmount) > 0){
