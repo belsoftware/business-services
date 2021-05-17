@@ -13,6 +13,8 @@ import com.tarento.analytics.dto.Plot;
 import com.tarento.analytics.helper.ComputedFieldFactory;
 import com.tarento.analytics.helper.IComputedField;
 import com.tarento.analytics.model.ComputedFields;
+
+import org.apache.velocity.runtime.directive.Foreach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
  *
  */
 @Component
+
 public class AdvanceTableChartResponseHandler implements IResponseHandler {
     public static final Logger logger = LoggerFactory.getLogger(AdvanceTableChartResponseHandler.class);
 
@@ -58,14 +61,16 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
         List<Data> dataList = new ArrayList<>();
         Map<String, Map<String, Plot>> mappings = new HashMap<>();
 
-
+        
         aggrNodes.stream().forEach(node -> {
-
+        	//System.out.println("The module is "+(node));
             ArrayNode buckets = (ArrayNode) node;
             buckets.forEach(bucket -> {
 
                 Map<String, Plot> plotMap = new LinkedHashMap<>();
                 String key = bucket.get(IResponseHandler.KEY).asText();
+                
+                
 
                 //If aggrPath is specified.
                 if(aggrsPaths.size()>0){
@@ -74,33 +79,39 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
                 } else {
                     processNestedObjects(bucket, mappings, key, plotMap);
                 }
-
+                
                 if (plotMap.size() > 0) {
                     Map<String, Plot> plots = new LinkedHashMap<>();
                     Plot sno = new Plot(SERIAL_NUMBER, null, TABLE_TEXT);
-                    sno.setLabel("" + idx[0]++);
+                    sno.setLabel("" + idx[0]++);                                        
+                    
+                    
                     Plot plotkey = new Plot(plotLabel.isEmpty() ? TABLE_KEY : plotLabel, null, TABLE_TEXT);
                     plotkey.setLabel(key);
-
+                    
+                    //plotkey.print(); output:Boundary , null , text , pb.canName
+                   
                     plots.put(SERIAL_NUMBER, sno);
                     plots.put(plotLabel.isEmpty() ? TABLE_KEY : plotLabel, plotkey);
                     plots.putAll(plotMap);
                     mappings.put(key, plots);
 
                 }
-
             });
-
         });
+        
+        Adding(mappings,plotLabel);       
+        
         mappings.entrySet().stream().parallel().forEach(plotMap -> {
             List<Plot> plotList = plotMap.getValue().values().stream().parallel().collect(Collectors.toList());
             //filter out data object with all zero data.
-            List<Plot> filterPlot = plotList.stream().filter(c -> (!c.getName().equalsIgnoreCase(SERIAL_NUMBER) && !c.getName().equalsIgnoreCase(plotLabel) && c.getValue() != 0.0)).collect(Collectors.toList());
+         List<Plot> filterPlot = plotList.stream().filter(c -> (!c.getName().equalsIgnoreCase(SERIAL_NUMBER) && !c.getName().equalsIgnoreCase(plotLabel) && c.getValue() != 0.0)).collect(Collectors.toList());
 
             if(filterPlot.size()>0){
                 Data data = new Data(plotMap.getKey(), Integer.parseInt(String.valueOf(plotMap.getValue().get(SERIAL_NUMBER).getLabel())), null);
                 data.setPlots(plotList);
-                //
+                
+                
                 if(executeComputedFields){
                     try {
 
@@ -111,12 +122,15 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
                             computedFieldObject.add(data, cfs.getFields(), cfs.getNewField() );
 
                         });
+                        //System.out.println("check data"+data);
                         // exclude the fields no to be displayed
                         if(excludedFields!=null){
                             List<String> list = mapper.readValue(excludedFields.toString(), new TypeReference<List<String>>(){});
                             List<Plot> removeplots = data.getPlots().stream().filter(c -> list.contains(c.getName())).collect(Collectors.toList());
                             data.getPlots().removeAll(removeplots);
                         }
+                        
+                        //System.out.println("check data"+data);
 
 
                     } catch (Exception e){
@@ -125,9 +139,12 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
                 }
                 dataList.add(data);
             }
-
+          
+            
         });
+        
         //dataList.sort((o1, o2) -> ((Integer) o1.getHeaderValue()).compareTo((Integer) o2.getHeaderValue()));
+       
         return getAggregatedDto(chartNode, dataList, requestDto.getVisualizationCode());
 
     }
@@ -146,6 +163,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
         Double value = valNode.isDouble() ? valNode.asDouble() : valNode.asInt();
         String dataType = valNode.isDouble() ? "amount" : "number"; // to move to config or constants
         //String headerName = bucketNode.findValue(KEY).asText();
+        //System.out.println("  headerName:"+headerName+" value:"+value+" dataType:"+dataType);
         Plot plot = new Plot(headerName, value, dataType);
 
         if (mappings.containsKey(key)) {
@@ -157,6 +175,52 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
         }
     }
 
+    /**
+     * ensuring that every CB has all keys, if not we include that key with value 0 
+     * @param mappings
+     */
+    private void Adding(Map<String, Map<String, Plot>> mappings, String plotLabel )
+    {
+    	Map<String, Plot> M1 = new HashMap<>();
+        for (String key : mappings.keySet()) 
+        {	for (String key2 : mappings.get(key).keySet())
+        	{	 String label= mappings.get(key).get(key2).getLabel() ;
+        	     String name = mappings.get(key).get(key2).getName();
+        	     Double value = 0.0 ;
+        	     String symbol = mappings.get(key).get(key2).getSymbol() ;
+        		if(key2!=plotLabel && key2 != SERIAL_NUMBER)
+        		{	boolean x= false;
+        			for (String key3 : M1.keySet())
+                	{	if(key3==key2)
+        				{x= true; break;	} 
+                	}
+        			if(!x)
+        			{	Plot i = new Plot();
+        				i.setLabel(label);
+        				i.setValue(value);
+        				i.setName(name);
+        				i.setSymbol(symbol);
+        				M1.put(key2,i);        }
+        		}}
+        }                                    // putting all unique <key,value> pair to map M1
+        
+        for (String key : mappings.keySet()) 
+        {	for (String key1 : M1.keySet()) 
+            {   boolean x= false;
+        		for (String key2 : mappings.get(key).keySet())
+            	{	if(key2.toString() != plotLabel && key2 != SERIAL_NUMBER)
+        			{	if(key2==key1)
+        				{x=true; break; }}
+            	}
+        		if(!x)
+        		{Plot i = new Plot();
+        			i.setName(M1.get(key1).getName());
+        			i.setValue(M1.get(key1).getValue());
+        			i.setSymbol(M1.get(key1).getSymbol());
+        			i.setLabel(M1.get(key1).getLabel());
+        			mappings.get(key).put(key1, i); }}
+        }                                	 // ensuring all keys are present for every CB using M1
+    }										 // if not putting that <key,value> pair to resp. CB
     /**
      * Recursively processing the nodes
      * @param node
@@ -190,6 +254,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
     private void processWithSpecifiedKeys(ArrayNode aggrsPaths, JsonNode bucket, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap ){
 
         aggrsPaths.forEach(headerPath -> {
+        	//System.out.println("Check header "+headerPath);
             JsonNode valueNode = bucket.findValue(headerPath.asText());
             //Double value = (null == valueNode || null == valueNode.get(VALUE)) ? 0.0 : valueNode.get(VALUE).asDouble();
             Double doc_value = 0.0;
