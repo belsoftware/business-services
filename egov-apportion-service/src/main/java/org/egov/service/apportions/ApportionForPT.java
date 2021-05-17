@@ -66,10 +66,6 @@ public class ApportionForPT implements ApportionV2 {
 			BigDecimal requiredAdvanceAmount = apportionAndGetRequiredAdvance(apportionRequestV2);
 			remainingAmount = remainingAmount.add(requiredAdvanceAmount);
 		}
-		// Current demand details to apportion for arrears & current demand
-		TaxDetail currentTaxDetail = taxDetails.get(taxDetails.size() - 1);
-		List<Bucket> currentBuckets = currentTaxDetail.getBuckets();
-		BigDecimal currentTotalAmt = getTotalAmountForTaxDetail(currentTaxDetail);
 		BigDecimal amountBeforeApportion = remainingAmount;
 
 		for (TaxDetail taxDetail : taxDetails) {
@@ -86,7 +82,6 @@ public class ApportionForPT implements ApportionV2 {
 
 			BigDecimal totalAmount = getTotalAmountForTaxDetail(taxDetail);
 			BigDecimal appAmt = BigDecimal.ZERO;
-			BigDecimal extraCalculatedAmt = BigDecimal.ZERO;
 			for (Bucket bucket : taxDetail.getBuckets()) {
 				
 				amount = bucket.getAmount().subtract(bucket.getAdjustedAmount());
@@ -116,34 +111,18 @@ public class ApportionForPT implements ApportionV2 {
 
 						// To apportion balance amount(after adjusting interest and demand notice) among all the tax heads
 						else {
-
-							List<Bucket> filteredTaxhead = (List<Bucket>) currentBuckets.stream().filter(
-									lbucket -> lbucket.getTaxHeadCode().equalsIgnoreCase(bucket.getTaxHeadCode()))
-									.collect(Collectors.toList());
-							//get the current demand amount for this taxhead
-							Bucket currenttaxHead = filteredTaxhead.get(0);
-							BigDecimal lTaxAmt = currenttaxHead.getAmount()
-									.subtract(currenttaxHead.getAdjustedAmount());
-
+							BigDecimal lTaxAmt = bucket.getAmount()
+									.subtract(bucket.getAdjustedAmount());
+							
+							
 							// if total amount to be paid for demand is less than amount paid/remaining amount then directly clearing the actual amount
 							if (totalAmount.compareTo(remainingAmount) < 0) {
 								BigDecimal calculatedAmount = amount;
 								bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
 								appAmt = appAmt.add(calculatedAmount);
 							} else {
-								// else calculate the amount to be adjusted based on current year demand
-								//(current tax head amount)*AmountPaid)/(Total of all tax heads of current demand)
-								BigDecimal calculatedAmount = (lTaxAmt.multiply(remainingAmount).divide(currentTotalAmt,2, RoundingMode.HALF_UP));
-								//
-								calculatedAmount=calculatedAmount.add(extraCalculatedAmt);
-								if(calculatedAmount.compareTo(amount)>0) {
-									extraCalculatedAmt = calculatedAmount.subtract(amount);
-
-									calculatedAmount=amount;
-								}
-								else {
-									extraCalculatedAmt = BigDecimal.ZERO;
-								}
+								BigDecimal calculatedAmount = (lTaxAmt.multiply(remainingAmount).divide(totalAmount,2, RoundingMode.HALF_UP));
+								
 								bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
 
 								appAmt = appAmt.add(calculatedAmount);
@@ -162,25 +141,6 @@ public class ApportionForPT implements ApportionV2 {
 				}
 			}
 			
-			//if extraamount is der adjust with any tax head
-			if(extraCalculatedAmt.compareTo(BigDecimal.ZERO)>0) {
-				for (Bucket bucket : taxDetail.getBuckets()) {
-					amount = bucket.getAmount().subtract(bucket.getAdjustedAmount());
-					if (amount.compareTo(extraCalculatedAmt) <= 0) {
-						BigDecimal calculatedAmount = amount;
-						bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
-						extraCalculatedAmt = extraCalculatedAmt.subtract(calculatedAmount);
-						appAmt = appAmt.add(calculatedAmount);
-
-					} else {
-						BigDecimal calculatedAmount = extraCalculatedAmt;
-						bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
-						extraCalculatedAmt = extraCalculatedAmt.subtract(calculatedAmount);
-						appAmt = appAmt.add(calculatedAmount);
-
-					}
-				}
-			}
 			remainingAmount = remainingAmount.subtract(appAmt);
 			if (taxDetail.getAmountPaid() == null)
 				taxDetail.setAmountPaid(BigDecimal.ZERO);
