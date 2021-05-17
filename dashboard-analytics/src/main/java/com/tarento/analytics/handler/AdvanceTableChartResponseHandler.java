@@ -101,7 +101,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
             });
         });
         
-        Adding(mappings,plotLabel);       
+        addMissingPlots(mappings,plotLabel);       
         
         mappings.entrySet().stream().parallel().forEach(plotMap -> {
             List<Plot> plotList = plotMap.getValue().values().stream().parallel().collect(Collectors.toList());
@@ -177,51 +177,59 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
     }
 
     /**
-     * ensuring that every CB has all keys, if not we include that key with value 0 
-     * @param mappings
+     * Ensuring that every CB has all keys, if not we include that key with value 0 
+     * @param mappings : has list of all CBs with CB name, <key,value> pairs
+     * @param plotLabel : plotLabel=Boundary
      */
-    private void Adding(Map<String, Map<String, Plot>> mappings, String plotLabel )
+    private void addMissingPlots(Map<String, Map<String, Plot>> mappings, String plotLabel )
     {
     	Map<String, Plot> M1 = new HashMap<>();
-        for (String key : mappings.keySet()) 
-        {	for (String key2 : mappings.get(key).keySet())
-        	{	 String label= mappings.get(key).get(key2).getLabel() ;
+        for (String key : mappings.keySet()) {	         // putting all unique <key,value> pair to map M1
+        	for (String key2 : mappings.get(key).keySet()) {
+        		String label= mappings.get(key).get(key2).getLabel() ;
         	     String name = mappings.get(key).get(key2).getName();
         	     Double value = 0.0 ;
         	     String symbol = mappings.get(key).get(key2).getSymbol() ;
-        		if(key2!=plotLabel && key2 != SERIAL_NUMBER)
-        		{	boolean x= false;
-        			for (String key3 : M1.keySet())
-                	{	if(key3==key2)
-        				{x= true; break;	} 
+        		if(key2!=plotLabel && key2 != SERIAL_NUMBER) {
+        			boolean isKeyPresent= false;
+        			for (String key3 : M1.keySet()) {
+                		if(key3==key2)
+        				{isKeyPresent= true; break;} 
                 	}
-        			if(!x)
-        			{	Plot i = new Plot();
+        			if(!isKeyPresent) {
+        				Plot i = new Plot();
         				i.setLabel(label);
         				i.setValue(value);
         				i.setName(name);
         				i.setSymbol(symbol);
-        				M1.put(key2,i);        }
-        		}}
-        }                                    // putting all unique <key,value> pair to map M1
+        				M1.put(key2,i);        
+        			}							
+        		}
+        	}
+        }                                    
         
-        for (String key : mappings.keySet()) 
-        {	for (String key1 : M1.keySet()) 
-            {   boolean x= false;
-        		for (String key2 : mappings.get(key).keySet())
-            	{	if(key2.toString() != plotLabel && key2 != SERIAL_NUMBER)
-        			{	if(key2==key1)
-        				{x=true; break; }}
+     // ensuring all keys are present for every CB using M1
+        for (String key : mappings.keySet()) {
+        	for (String key1 : M1.keySet()) {
+        		boolean isKeyPresent= false;
+        		for (String key2 : mappings.get(key).keySet()) {
+            		if(key2.toString() != plotLabel && key2 != SERIAL_NUMBER) {
+        				if(key2==key1) {
+        					isKeyPresent=true; break; 
+        				}
+        			}
             	}
-        		if(!x)
-        		{Plot i = new Plot();
+        		if(!isKeyPresent){
+        			Plot i = new Plot();
         			i.setName(M1.get(key1).getName());
         			i.setValue(M1.get(key1).getValue());
         			i.setSymbol(M1.get(key1).getSymbol());
         			i.setLabel(M1.get(key1).getLabel());
-        			mappings.get(key).put(key1, i); }}
-        }                                	 // ensuring all keys are present for every CB using M1
-    }										 // if not putting that <key,value> pair to resp. CB
+        			mappings.get(key).put(key1, i);        // putting that <key,value> pair to resp. CB
+        		}
+        	}
+        }                                	 
+    }										 
     /**
      * Recursively processing the nodes
      * @param node
