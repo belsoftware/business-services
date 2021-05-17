@@ -1,6 +1,7 @@
 package com.tarento.analytics.dto;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Data {
@@ -65,6 +66,20 @@ public class Data {
     public String getHeaderSymbol() {
         return headerSymbol;
     }
+    
+    
+    
+    	
+    
+    public void print() {
+    	System.out.println(this.headerName + " , " + this.headerValue + " , " +this.headerSymbol);
+    	for (Iterator iterator = plots.iterator(); iterator.hasNext();) {
+			Plot plot = (Plot) iterator.next();
+			plot.print();
+		}
+}
+    
+    
 
 
 

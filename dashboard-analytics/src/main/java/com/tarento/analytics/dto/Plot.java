@@ -14,6 +14,10 @@ public class Plot {
         this.value = value;
         this.symbol = symbol;
     }
+     public Plot()
+     {
+    	 
+     }
 
     public String getName() {
         return name;
@@ -37,4 +41,15 @@ public class Plot {
     public void setValue(Double value) {
         this.value = value;
     }
+    public void setName(String name) {
+        this.name = name;
+    }
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
+    
+    public void print() {
+    	System.out.println("\t"+this.name + " , " + this.value + " , " +this.symbol + " , "+this.label);
+    }
+    
 }
