@@ -141,10 +141,32 @@ public class ApportionForPT implements ApportionV2 {
 				}
 			}
 			
+			
 			remainingAmount = remainingAmount.subtract(appAmt);
 			if (taxDetail.getAmountPaid() == null)
 				taxDetail.setAmountPaid(BigDecimal.ZERO);
 
+			//taxDetail.setAmountPaid(taxDetail.getAmountPaid().add(amountBeforeApportion.subtract(remainingAmount)));
+			BigDecimal amtDue = taxDetail.getAmountToBePaid().subtract(taxDetail.getAmountPaid().add(amountBeforeApportion.subtract(remainingAmount)));
+			if(amtDue.compareTo(BigDecimal.ZERO) > 0 && remainingAmount.compareTo(BigDecimal.ZERO)!=0) {
+				for (Bucket bucket : taxDetail.getBuckets()) {
+					if(remainingAmount.compareTo(BigDecimal.ZERO)!=0){
+					if (amtDue.compareTo(remainingAmount) <= 0) {
+						BigDecimal calculatedAmount = amtDue;
+						bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
+						remainingAmount = remainingAmount.subtract(calculatedAmount);
+					} else {
+						BigDecimal calculatedAmount = remainingAmount;
+						bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
+
+						remainingAmount = remainingAmount.subtract(calculatedAmount);
+
+						//appAmt = remainingAmount.subtract(calculatedAmount);
+					}
+					}
+				}
+				
+			}
 			taxDetail.setAmountPaid(taxDetail.getAmountPaid().add(amountBeforeApportion.subtract(remainingAmount)));
 			amountBeforeApportion = remainingAmount;
 		}
