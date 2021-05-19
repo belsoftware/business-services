@@ -165,8 +165,10 @@ public class BillServicev2 {
 		/* 
 		 * If no existing bills found then Generate new bill 
 		 */
-		if (CollectionUtils.isEmpty(bills))
+		if (CollectionUtils.isEmpty(bills)) {
+			log.info("Bills empty");
 			return generateBill(billCriteria, requestInfo);
+		}
 		
 		Map<String, BillV2> consumerCodeAndBillMap = bills.stream().collect(Collectors.toMap(BillV2::getConsumerCode, Function.identity()));
 		billCriteria.getConsumerCode().addAll(consumerCodeAndBillMap.keySet());
@@ -202,8 +204,10 @@ public class BillServicev2 {
 		/*
 		 * If none of the billDetails in the bills needs to be updated then return the search result
 		 */
-		if(CollectionUtils.isEmpty(cosnumerCodesToBeExpired) && CollectionUtils.isEmpty(cosnumerCodesNotFoundInBill))
+		if(CollectionUtils.isEmpty(cosnumerCodesToBeExpired) && CollectionUtils.isEmpty(cosnumerCodesNotFoundInBill)) {
+			log.info("cosnumerCodesToBeExpired and cosnumerCodesNotFoundInBill empty");
 			return res;
+		}
 		else {
 			
 			billCriteria.getConsumerCode().retainAll(cosnumerCodesToBeExpired);
