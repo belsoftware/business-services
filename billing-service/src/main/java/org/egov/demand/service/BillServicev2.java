@@ -204,6 +204,17 @@ public class BillServicev2 {
 		/*
 		 * If none of the billDetails in the bills needs to be updated then return the search result
 		 */
+		if(bills.get(0).getBusinessService().equalsIgnoreCase("PT")) {
+			log.info("PT expiry chk removed for testing");
+			billCriteria.getConsumerCode().retainAll(cosnumerCodesToBeExpired);
+			billCriteria.getConsumerCode().addAll(cosnumerCodesNotFoundInBill);
+			updateDemandsForexpiredBillDetails(billCriteria.getBusinessService(), billCriteria.getConsumerCode(), billCriteria.getTenantId(), requestInfoWrapper);
+			billRepository.updateBillStatus(cosnumerCodesToBeExpired, BillStatus.EXPIRED);
+			BillResponseV2 finalResponse = generateBill(billCriteria, requestInfo);
+			finalResponse.getBill().addAll(billsToBeReturned);
+			return finalResponse;
+		}
+		else {
 		if(CollectionUtils.isEmpty(cosnumerCodesToBeExpired) && CollectionUtils.isEmpty(cosnumerCodesNotFoundInBill)) {
 			log.info("cosnumerCodesToBeExpired and cosnumerCodesNotFoundInBill empty");
 			return res;
@@ -217,6 +228,7 @@ public class BillServicev2 {
 			BillResponseV2 finalResponse = generateBill(billCriteria, requestInfo);
 			finalResponse.getBill().addAll(billsToBeReturned);
 			return finalResponse;
+		}
 		}
 	}
 
@@ -479,8 +491,10 @@ public class BillServicev2 {
 		} else if (!ObjectUtils.isEmpty(billExpiryPeriod) && 0 < billExpiryPeriod) {
 			cal.setTimeInMillis(cal.getTimeInMillis() + billExpiryPeriod);
 		}
-
-		cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE), 23, 59, 59);
+		if(demand.getBusinessService().equalsIgnoreCase("PT"))
+			cal.setTimeInMillis(cal.getTimeInMillis()-120000l);
+		else
+			cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE), 23, 59, 59);
 		return cal.getTimeInMillis();
 	}
 
