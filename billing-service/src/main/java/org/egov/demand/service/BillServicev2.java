@@ -491,10 +491,7 @@ public class BillServicev2 {
 		} else if (!ObjectUtils.isEmpty(billExpiryPeriod) && 0 < billExpiryPeriod) {
 			cal.setTimeInMillis(cal.getTimeInMillis() + billExpiryPeriod);
 		}
-		if(demand.getBusinessService().equalsIgnoreCase("PT"))
-			cal.setTimeInMillis(cal.getTimeInMillis()-120000l);
-		else
-			cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE), 23, 59, 59);
+		cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE), 23, 59, 59);
 		return cal.getTimeInMillis();
 	}
 
