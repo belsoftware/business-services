@@ -206,8 +206,8 @@ public class BillServicev2 {
 		 */
 		if(bills.get(0).getBusinessService().equalsIgnoreCase("PT")) {
 			log.info("PT expiry chk removed for testing");
-			billCriteria.getConsumerCode().retainAll(cosnumerCodesToBeExpired);
-			billCriteria.getConsumerCode().addAll(cosnumerCodesNotFoundInBill);
+			//billCriteria.getConsumerCode().retainAll(cosnumerCodesToBeExpired);
+			//billCriteria.getConsumerCode().addAll(cosnumerCodesNotFoundInBill);
 			updateDemandsForexpiredBillDetails(billCriteria.getBusinessService(), billCriteria.getConsumerCode(), billCriteria.getTenantId(), requestInfoWrapper);
 			billRepository.updateBillStatus(cosnumerCodesToBeExpired, BillStatus.EXPIRED);
 			BillResponseV2 finalResponse = generateBill(billCriteria, requestInfo);
