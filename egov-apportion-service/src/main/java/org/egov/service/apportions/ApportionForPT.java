@@ -314,7 +314,7 @@ public class ApportionForPT implements ApportionV2 {
 
 				// FIX ME
 				// advance should be checked from purpose
-				if(bucket.getAmount().compareTo(BigDecimal.ZERO) < 0){
+				if (bucket.getTaxHeadCode().contains("ADVANCE")) {
 
 					BigDecimal net = bucket.getAmount().subtract(bucket.getAdjustedAmount());
 					if (advance.add(net).abs().compareTo(totalPositiveAmount) > 0) {
