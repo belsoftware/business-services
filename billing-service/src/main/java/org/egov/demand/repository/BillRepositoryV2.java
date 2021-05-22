@@ -194,6 +194,18 @@ public class BillRepositoryV2 {
 		jdbcTemplate.update(queryStr, preparedStmtList.toArray());
 	}
 	
+	//workaround to be commented
+	///////////////////////////////
+	public void updateBillExpDate(String cosnumerCode) {
+
+		List<Object> preparedStmtList = new ArrayList<>();
+		preparedStmtList.add((System.currentTimeMillis() - 600000));
+		preparedStmtList.add(cosnumerCode);
+		String queryStr = "UPDATE egbs_billdetail_v1 SET expirydate=? where consumercode = ?";
+		jdbcTemplate.update(queryStr, preparedStmtList.toArray());
+	}
+	///////////////////////////////
+	
 	/**
 	 * executes batch query to update bill status for bill id
 	 *  

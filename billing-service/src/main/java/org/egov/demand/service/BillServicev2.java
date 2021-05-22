@@ -161,7 +161,18 @@ public class BillServicev2 {
 			billCriteria.setConsumerCode(new HashSet<>());
 		BillResponseV2 res = searchBill(billCriteria.toBillSearchCriteria(), requestInfo);
 		List<BillV2> bills = res.getBill();
-
+		
+		//work around. to be commented for pt int calc
+		////////////////////////////
+		for(BillV2 billtest : bills) {
+			if(billtest.getBusinessService().equalsIgnoreCase("PT")) {
+				billRepository.updateBillExpDate(billtest.getConsumerCode());
+			}
+		}
+		res = searchBill(billCriteria.toBillSearchCriteria(), requestInfo);
+		bills = res.getBill();
+		/////////////////////////////
+		
 		/* 
 		 * If no existing bills found then Generate new bill 
 		 */
