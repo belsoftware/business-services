@@ -193,4 +193,7 @@ public class ApplicationProperties {
     @Value("${amendment.id.format.name}")
     private String amendmentIdFormatName;
     
+    @Value("${egov.amend.apportion.endpoint}")
+	private String amendApportionEndpoint;
+    
 }

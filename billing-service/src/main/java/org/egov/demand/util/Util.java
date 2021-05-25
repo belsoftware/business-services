@@ -384,6 +384,12 @@ public class Util {
 		return masterdata;
 		
 	}
+
+	public String getAmendApportionURL() {
+				StringBuilder builder = new StringBuilder(appProps.getApportionHost());
+				builder.append(appProps.getAmendApportionEndpoint());
+				return builder.toString();
+	}
 	
 	
 }

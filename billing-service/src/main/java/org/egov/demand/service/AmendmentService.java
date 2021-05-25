@@ -218,7 +218,7 @@ public class AmendmentService {
 			demand.getDemandDetails().addAll(amendment.getDemandDetails());
 			DemandApportionRequest apportionRequest = DemandApportionRequest.builder().requestInfo(requestInfo)
 					.demands(demands).tenantId(amendment.getTenantId()).build();
-			Object response = serviceRequestRepository.fetchResult(util.getApportionURL(), apportionRequest);
+			Object response = serviceRequestRepository.fetchResult(util.getAmendApportionURL(), apportionRequest);
 			ApportionDemandResponse apportionDemandResponse = mapper.convertValue(response,
 					ApportionDemandResponse.class);
 			enrichAdvanceTaxHead(apportionDemandResponse.getDemands());
