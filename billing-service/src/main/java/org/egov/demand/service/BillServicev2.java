@@ -140,6 +140,9 @@ public class BillServicev2 {
 	@Value("${kafka.topics.billgen.topic.name}")
 	private String notifTopicName;
 	
+	@Value("${bs.pttestingmode}")
+	private boolean pttestingmode;
+	
 	/**
 	 * Fetches the bill for given parameters
 	 * 
@@ -164,9 +167,11 @@ public class BillServicev2 {
 		
 		//work around. to be commented for pt int calc
 		////////////////////////////
-		for(BillV2 billtest : bills) {
-			if(billtest.getBusinessService().equalsIgnoreCase("PT")) {
-				billRepository.updateBillExpDate(billtest.getConsumerCode());
+		if(pttestingmode) {
+			for(BillV2 billtest : bills) {
+				if(billtest.getBusinessService().equalsIgnoreCase("PT")) {
+					billRepository.updateBillExpDate(billtest.getConsumerCode());
+				}
 			}
 		}
 		res = searchBill(billCriteria.toBillSearchCriteria(), requestInfo);
