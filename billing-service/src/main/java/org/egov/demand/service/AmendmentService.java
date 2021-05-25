@@ -1,10 +1,12 @@
 package org.egov.demand.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,12 +19,16 @@ import org.egov.demand.amendment.model.AmendmentUpdateRequest;
 import org.egov.demand.amendment.model.State;
 import org.egov.demand.amendment.model.enums.AmendmentStatus;
 import org.egov.demand.config.ApplicationProperties;
+import org.egov.demand.model.ApportionDemandResponse;
 import org.egov.demand.model.AuditDetails;
 import org.egov.demand.model.BillV2.BillStatus;
 import org.egov.demand.model.Demand;
+import org.egov.demand.model.DemandApportionRequest;
 import org.egov.demand.model.DemandCriteria;
+import org.egov.demand.model.DemandDetail;
 import org.egov.demand.repository.AmendmentRepository;
 import org.egov.demand.repository.BillRepositoryV2;
+import org.egov.demand.repository.ServiceRequestRepository;
 import org.egov.demand.util.Util;
 import org.egov.demand.web.contract.DemandRequest;
 import org.egov.demand.web.validator.AmendmentValidator;
@@ -31,6 +37,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 
 @Service
 public class AmendmentService {
@@ -53,6 +62,11 @@ public class AmendmentService {
 	@Autowired
 	private AmendmentRepository amendmentRepository;
 	
+	@Autowired
+	private ServiceRequestRepository serviceRequestRepository;
+	
+	@Autowired
+	private ObjectMapper mapper;
 	/**
 	 * Search amendment based on criteria
 	 * 
@@ -157,7 +171,7 @@ public class AmendmentService {
 				.consumerCode(Stream.of(amendment.getConsumerCode()).collect(Collectors.toSet()))
 				.businessService(amendment.getBusinessService())
 				.tenantId(amendment.getTenantId())
-				.isPaymentCompleted(false)
+				//.isPaymentCompleted(false)
 				.build();
 		
 		List<Demand> demands = demandService.getDemands(demandCriteria, requestInfo);
@@ -174,22 +188,67 @@ public class AmendmentService {
 				detail.setDemandId(demand.getId());
 				detail.setTenantId(demand.getTenantId());
 			});
+			BigDecimal totalValue = BigDecimal.ZERO;
+			for (DemandDetail amenddemandDetail : amendment.getDemandDetails()) {
+				BigDecimal amendedAmount = amenddemandDetail.getTaxAmount().subtract(amenddemandDetail.getCollectionAmount());
+				if(amendedAmount.compareTo(BigDecimal.ZERO)<0) {
+				for (DemandDetail demandDetail : demand.getDemandDetails()) {
+					if(demandDetail.getTaxHeadMasterCode().equalsIgnoreCase(amenddemandDetail.getTaxHeadMasterCode())) {
+					BigDecimal demandAmount = demandDetail.getTaxAmount().subtract(demandDetail.getCollectionAmount());
+					if(demandAmount.compareTo(BigDecimal.ZERO)>0) {
+						if(amendedAmount.abs().compareTo(demandAmount)>0) {
+							demandDetail.setCollectionAmount(demandDetail.getCollectionAmount().add(demandAmount));
+							amenddemandDetail.setCollectionAmount(amenddemandDetail.getCollectionAmount().add(demandAmount).negate());
+							totalValue = totalValue.add(amendedAmount);
+							amendedAmount = amendedAmount.subtract(demandAmount);
+							
+						}
+						else {
+							demandDetail.setCollectionAmount(demandDetail.getCollectionAmount().add(amendedAmount.abs()));
+							amenddemandDetail.setCollectionAmount(amenddemandDetail.getCollectionAmount().add(amendedAmount));
+
+							amendedAmount = BigDecimal.ZERO;
+						}
+					}
+					}
+				}
+				}
+				
+			}
 			demand.getDemandDetails().addAll(amendment.getDemandDetails());
-			demandService.update(new DemandRequest(requestInfo, Arrays.asList(demand)), null);
-			
+			DemandApportionRequest apportionRequest = DemandApportionRequest.builder().requestInfo(requestInfo)
+					.demands(demands).tenantId(amendment.getTenantId()).build();
+			Object response = serviceRequestRepository.fetchResult(util.getApportionURL(), apportionRequest);
+			ApportionDemandResponse apportionDemandResponse = mapper.convertValue(response,
+					ApportionDemandResponse.class);
+			enrichAdvanceTaxHead(apportionDemandResponse.getDemands());
+
+			demandService.update(new DemandRequest(requestInfo, apportionDemandResponse.getDemands()), null);
+
 			AmendmentUpdate amendmentUpdate = AmendmentUpdate.builder()
-					.additionalDetails(amendment.getAdditionalDetails())
-					.amendmentId(amendment.getAmendmentId())
-					.tenantId(amendment.getTenantId())
-					.status(AmendmentStatus.CONSUMED)
-					.amendedDemandId(demand.getId())
-					.auditDetails(auditDetails)
-					.build();
-			
+					.additionalDetails(amendment.getAdditionalDetails()).amendmentId(amendment.getAmendmentId())
+					.tenantId(amendment.getTenantId()).status(AmendmentStatus.CONSUMED).amendedDemandId(demand.getId())
+					.auditDetails(auditDetails).build();
+
 			amendmentRepository.updateAmendment(Arrays.asList(amendmentUpdate));
-			billRepositoryV2.updateBillStatus(demands.stream().map(Demand::getConsumerCode).collect(Collectors.toList()),
-					BillStatus.EXPIRED);
+			billRepositoryV2.updateBillStatus(
+					demands.stream().map(Demand::getConsumerCode).collect(Collectors.toList()), BillStatus.EXPIRED);
+						 
 		}
 	}
 
+	public void enrichAdvanceTaxHead(List<Demand> demands) {
+		demands.forEach(demand -> {
+			demand.getDemandDetails().forEach(demandDetail ->  {
+					if (StringUtils.isEmpty(demandDetail.getId())
+							&& demandDetail.getTaxHeadMasterCode().contains("ADVANCE")) {
+						demandDetail.setId(UUID.randomUUID().toString());
+						demandDetail.setTenantId(demand.getTenantId());
+						demandDetail.setDemandId(demand.getId());
+					}
+				});
+			});
+		
+	}
+	
 }
