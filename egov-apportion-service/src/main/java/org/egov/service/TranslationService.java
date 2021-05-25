@@ -120,6 +120,97 @@ public class TranslationService {
     }
 
 
+	public ApportionRequestV2 translateAmends(List<Demand> demands, Object mdmsData) {
+
+
+        // Group by businessService before calling this function
+        String businessService = demands.get(0).getBusinessService();
+
+
+        Map<String,Integer> codeToOrderMap = taxHeadMasterService.getCodeToOrderMap(businessService,mdmsData);
+
+        // FIX ME
+        BigDecimal amountPaid = new BigDecimal(0);
+        Boolean isAdvanceAllowed = taxHeadMasterService.isAdvanceAllowed(businessService,mdmsData);
+        BigDecimal negAmounts = BigDecimal.ZERO;
+        BigDecimal negAdjAmounts = BigDecimal.ZERO;
+
+        ApportionRequestV2 apportionRequestV2 = ApportionRequestV2.builder().amountPaid(amountPaid).businessService(businessService)
+                .isAdvanceAllowed(false).isAmend(true).build();
+
+        Map<String,String> errorMap = new HashMap<>();
+
+        for(Demand demand : demands){
+
+            TaxDetail taxDetail = TaxDetail.builder().fromPeriod(demand.getTaxPeriodFrom()).entityId(demand.getId()).build();
+
+            BigDecimal amountToBePaid = BigDecimal.ZERO;
+            BigDecimal collectedAmount = BigDecimal.ZERO;
+
+            for(DemandDetail demandDetail : demand.getDemandDetails()){
+
+                Integer priority = codeToOrderMap.get(demandDetail.getTaxHeadMasterCode());
+
+                if(priority == null)
+                    errorMap.put("INVALID_TAXHEAD_CODE","Order is null or taxHead is not found for code: "+demandDetail.getTaxHeadMasterCode());
+
+                Bucket bucket = Bucket.builder().amount(demandDetail.getTaxAmount())
+                        .adjustedAmount((demandDetail.getCollectionAmount()==null) ? BigDecimal.ZERO : demandDetail.getCollectionAmount())
+                        .taxHeadCode(demandDetail.getTaxHeadMasterCode())
+                        .priority(priority)
+                        .entityId(demandDetail.getId())
+                        .build();
+                
+                //Adding all the negative amounts and adding as advance
+                if(bucket.getAmount().compareTo(BigDecimal.ZERO)<0 ) {
+                	negAmounts = negAmounts.add(bucket.getAmount());
+                	negAdjAmounts = negAdjAmounts.add(bucket.getAdjustedAmount());
+                	 if( !bucket.getTaxHeadCode().contains("ADVANCE")) 
+                	bucket.setAdjustedAmount(bucket.getAmount());
+                	
+
+                }
+                
+                
+
+                if(bucket.getAmount().compareTo(BigDecimal.ZERO)>0) {
+                amountToBePaid = amountToBePaid.add(demandDetail.getTaxAmount());
+                collectedAmount = collectedAmount.add(demandDetail.getCollectionAmount());
+                }
+                taxDetail.addBucket(bucket);
+            }
+
+            taxDetail.setAmountPaid(collectedAmount);
+            taxDetail.setAmountToBePaid(amountToBePaid);
+            
+            //considering negative amounts as amount paid which will be used for apportioning among all the tax heads
+            apportionRequestV2.setAmountPaid(negAmounts.subtract(negAdjAmounts).negate());
+            List<Bucket> buckets1 = taxDetail.getBuckets();
+            for (Bucket bucket : buckets1) {
+            	 if( bucket.getTaxHeadCode().contains("ADVANCE")) {
+            		 if(negAmounts.compareTo(BigDecimal.ZERO)!=0) {
+            		 bucket.setAmount(negAmounts);
+            		 if(amountToBePaid.subtract(collectedAmount).compareTo(BigDecimal.ZERO)>0 )
+            			if( amountToBePaid.subtract(collectedAmount).compareTo(bucket.getAmount().subtract(bucket.getAdjustedAmount()).abs())>=0) {
+            				bucket.setAdjustedAmount(bucket.getAmount());
+            			}
+            			else
+            				bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(amountToBePaid.subtract(collectedAmount).negate()));
+            		 }
+            	 }
+			}
+            apportionRequestV2.addTaxDetail(taxDetail);
+
+        }
+
+        if(!CollectionUtils.isEmpty(errorMap))
+            throw new CustomException(errorMap);
+
+        return apportionRequestV2;
+    
+	}
+
+
 
 
 

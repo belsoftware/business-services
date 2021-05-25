@@ -184,13 +184,36 @@ public class ApportionServiceV2 {
         Map<String,BigDecimal> idToAdjustedAmount = new HashMap<>();
         taxDetails.forEach(taxDetail -> {
             taxDetail.getBuckets().forEach(bucket -> {
-                idToAdjustedAmount.put(bucket.getEntityId(),bucket.getAdjustedAmount());
+            	idToAdjustedAmount.put(bucket.getEntityId(),bucket.getAdjustedAmount());
             });
         });
 
         demands.forEach(demand -> {
             demand.getDemandDetails().forEach(demandDetail -> {
                 demandDetail.setCollectionAmount(idToAdjustedAmount.get(demandDetail.getId()));
+            });
+        });
+
+    }
+    
+    private void updateAdjustedAmountInDemandsAfterAmend(List<Demand> demands,List<TaxDetail> taxDetails){
+    	Map<String,Bucket> idToBucket = new HashMap<>();
+        Map<String,BigDecimal> idToAmountPaid = new HashMap<>();
+        
+        taxDetails.forEach(taxDetail -> {
+            idToAmountPaid.put(taxDetail.getEntityId(),taxDetail.getAmountPaid());
+            taxDetail.getBuckets().forEach(bucket -> {
+                idToBucket.put(bucket.getEntityId(),bucket);
+            });
+        });
+
+        demands.forEach(demand -> {
+
+            demand.getDemandDetails().forEach(demandDetail -> {
+            	demandDetail.setCollectionAmount(idToBucket.get(demandDetail.getId()).getAdjustedAmount());
+            	if(demandDetail.getTaxHeadMasterCode().contains("ADVANCE")){
+            		demandDetail.setTaxAmount(idToBucket.get(demandDetail.getId()).getAmount());
+                }
             });
         });
 
@@ -271,5 +294,42 @@ public class ApportionServiceV2 {
     }
 
 
+    
+    
+    public List<Demand> apportionAmendedDemands(DemandApportionRequest request) {
+        List<Demand> demands = request.getDemands();
+        ApportionV2 apportion;
+
+        //Save the request through persister
+        producer.push(config.getDemandRequestTopic(), request);
+
+        //Fetch the required MDMS data
+        Object masterData = mdmsService.mDMSCall(request.getRequestInfo(), request.getTenantId());
+
+        demands.sort(Comparator.comparing(Demand::getTaxPeriodFrom));
+
+        ApportionRequestV2 apportionRequestV2 = translationService.translateAmends(demands,masterData);
+
+        /*
+        * Need to validate that all demands that come for apportioning
+        * has same businessService and consumerCode
+        * */
+        String businessKey = demands.get(0).getBusinessService();
+
+        if (isApportionPresent(businessKey))
+            apportion = getApportion(businessKey);
+        else
+            apportion = getApportion(DEFAULT);
+
+        List<TaxDetail> taxDetails = apportion.apportionPaidAmount(apportionRequestV2, masterData);
+        updateAdjustedAmountInDemandsAfterAmend(demands,taxDetails);
+        addAdvanceIfExistForDemand(demands,taxDetails);
+
+
+
+        //Save the response through persister
+        producer.push(config.getDemandResponseTopic(), request);
+        return demands;
+    }
 
 }

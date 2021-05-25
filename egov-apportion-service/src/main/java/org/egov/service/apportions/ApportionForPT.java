@@ -228,6 +228,10 @@ public class ApportionForPT implements ApportionV2 {
 		}
 
 		else {
+			if(apportionRequestV2.getIsAmend()!=null && apportionRequestV2.getIsAmend()) {
+				bucketForAdvance.setAmount(bucketForAdvance.getAmount());
+			}
+			else
 			bucketForAdvance.setAmount(bucketForAdvance.getAmount().add(advanceAmount.negate()));
 		}
 

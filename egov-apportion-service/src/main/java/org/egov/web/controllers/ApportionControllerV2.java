@@ -68,7 +68,16 @@ public class ApportionControllerV2 {
         return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
-
+    @RequestMapping(value="/amend/_apportion", method = RequestMethod.POST)
+    public ResponseEntity<ApportionDemandResponse> apportionAmendPost(@Valid @RequestBody DemandApportionRequest apportionRequest){
+        List<Demand> demands = apportionService.apportionAmendedDemands(apportionRequest);
+        ApportionDemandResponse response = ApportionDemandResponse.builder()
+                .tenantId(apportionRequest.getTenantId())
+                .demands(demands)
+                .responseInfo(responseInfoFactory.createResponseInfoFromRequestInfo(apportionRequest.getRequestInfo(),
+                        true)).build();
+        return new ResponseEntity<>(response,HttpStatus.OK);
+    }
 
 
 

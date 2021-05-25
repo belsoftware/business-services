@@ -20,6 +20,9 @@ public class ApportionRequestV2 {
 
     @JsonProperty("isAdvanceAllowed")
     private Boolean isAdvanceAllowed = null;
+    
+    @JsonProperty("isAmend")
+    private Boolean isAmend = null;
 
     @JsonProperty("buckets")
     private List<TaxDetail> taxDetails = null;
