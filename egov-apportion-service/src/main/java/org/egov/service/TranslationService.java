@@ -1,6 +1,7 @@
 package org.egov.service;
 
 import org.egov.tracer.model.CustomException;
+import org.egov.util.ApportionConstants;
 import org.egov.web.models.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -162,7 +163,7 @@ public class TranslationService {
                         .build();
                 
                 //Adding all the negative amounts and adding as advance
-                if(bucket.getAmount().compareTo(BigDecimal.ZERO)<0 ) {
+                if(bucket.getAmount().compareTo(BigDecimal.ZERO)<0 && !ApportionConstants.ADDITIONAL_TAXES.contains(bucket.getTaxHeadCode())) {
                 	negAmounts = negAmounts.add(bucket.getAmount());
                 	negAdjAmounts = negAdjAmounts.add(bucket.getAdjustedAmount());
                 	 if( !bucket.getTaxHeadCode().contains("ADVANCE")) 
