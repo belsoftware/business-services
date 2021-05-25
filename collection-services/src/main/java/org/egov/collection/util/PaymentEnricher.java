@@ -13,6 +13,7 @@ import static org.egov.collection.model.enums.PaymentModeEnum.ONLINE_NEFT;
 import static org.egov.collection.model.enums.PaymentModeEnum.ONLINE_RTGS;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,9 +36,11 @@ import org.egov.collection.service.MDMSService;
 import org.egov.collection.web.contract.Bill;
 import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 import com.jayway.jsonpath.JsonPath;
 
@@ -55,6 +58,18 @@ public class PaymentEnricher {
 
 	@Autowired
 	private MDMSService mdmsService;
+	
+	@Value("${cs.pttestingmode}")
+	private boolean pttestingmode;
+    
+    @Value("${egov.url.ptcalc.host}")
+    private String ptCalcHost;
+
+    @Value("${egov.url.ptcalc.getendpoint}")
+    private String ptCalcGetEndpoint;
+    
+    @Autowired
+    private RestTemplate restTemplate;
 
 	public void enrichPaymentPreValidate(PaymentRequest paymentRequest) {
 
@@ -190,8 +205,20 @@ public class PaymentEnricher {
 			payment.setInstrumentStatus(InstrumentStatusEnum.REMITTED);
 		else
 			payment.setInstrumentStatus(InstrumentStatusEnum.APPROVED);
-
-		payment.setTransactionDate(new Date().getTime());
+		if (pttestingmode
+				&& payment.getPaymentDetails().get(0).getBill().getBusinessService().equalsIgnoreCase("PT")) {
+			try {
+				String transactionDateStr = restTemplate.getForObject(ptCalcHost + ptCalcGetEndpoint, String.class);
+				log.info("In PT Test set transaction date "+transactionDateStr);
+				SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+				payment.setTransactionDate(sdf.parse(transactionDateStr).getTime());
+			} catch (Exception e) {
+				log.info("In PT Test Date error");
+				payment.setTransactionDate(new Date().getTime());
+			}
+		}else {
+			payment.setTransactionDate(new Date().getTime());
+		}
 		if(paymentMode.equalsIgnoreCase(CASH.name()) || paymentMode.equalsIgnoreCase(CARD.name()) || paymentMode.equalsIgnoreCase(ONLINE.name())
 				|| paymentMode.equalsIgnoreCase(ONLINE_NEFT.name()) || paymentMode.equalsIgnoreCase(ONLINE_RTGS.name())) {
 			payment.setInstrumentDate(payment.getTransactionDate());
