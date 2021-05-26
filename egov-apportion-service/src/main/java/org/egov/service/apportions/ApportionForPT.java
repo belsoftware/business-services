@@ -116,7 +116,7 @@ public class ApportionForPT implements ApportionV2 {
 							
 							
 							// if total amount to be paid for demand is less than amount paid/remaining amount then directly clearing the actual amount
-							if (totalAmount.compareTo(remainingAmount) < 0) {
+							if (totalAmount.compareTo(remainingAmount) <= 0) {
 								BigDecimal calculatedAmount = amount;
 								bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
 								appAmt = appAmt.add(calculatedAmount);
