@@ -4,7 +4,10 @@ import static org.egov.demand.util.Constants.BUSINESSSERVICE_MODULE_PATH;
 import static org.egov.demand.util.Constants.TAXHEADMASTER_PATH_CODE;
 
 import java.math.BigDecimal;
+import java.time.Month;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -204,7 +207,7 @@ public class AmendmentValidator {
 		Amendment amendment = amendmentRequest.getAmendment();
 		RequestInfo requestInfo = amendmentRequest.getRequestInfo();
 		amendment.setId(UUID.randomUUID().toString());
-		
+		Integer amendFor = getNoofYearsTobeAmended(amendmentRequest);
 		/*
 		 * Id-Gen for amendment Id & UUID enrichment
 		 */
@@ -217,7 +220,11 @@ public class AmendmentValidator {
 		
 		amendment.setAuditDetails(util.getAuditDetail(requestInfo));
 		amendment.getDemandDetails().forEach(detail -> {
+			if(detail.getTaxAmount().compareTo(BigDecimal.ZERO) != 0 && amendFor>1){
+				detail.setTaxAmount(detail.getTaxAmount().multiply(new BigDecimal(amendFor)));
+			}
 			detail.setId(UUID.randomUUID().toString());
+			
 		});
 		
 		amendment.getDocuments().forEach(doc -> {
@@ -242,6 +249,30 @@ public class AmendmentValidator {
 			amendment.setStatus(AmendmentStatus.ACTIVE);
 		}
 		
+	}
+
+	private Integer getNoofYearsTobeAmended(AmendmentRequest amendmentRequest) {
+		Amendment amendment = amendmentRequest.getAmendment();
+		Long fromDate = amendment.getEffectiveFrom();
+		Long toDate = amendment.getEffectiveTill();
+		if(toDate==null) {
+			toDate = new Date().getTime();
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeInMillis(fromDate);
+		Integer fromYear = cal.get(Calendar.YEAR);
+		Integer fromMonth = cal.get(Calendar.MONTH);
+		boolean beforeMarch = fromMonth < 3;
+		fromYear = fromYear - (beforeMarch ? 1 : 0);
+		
+		Calendar calTo = Calendar.getInstance();
+		calTo.setTimeInMillis(toDate);
+		Integer toYear = calTo.get(Calendar.YEAR);
+		Integer toMonth = calTo.get(Calendar.MONTH);
+		boolean beforeMarchTo = toMonth < 3;
+		toYear = toYear - (beforeMarchTo ? 1 : 0);
+	    
+		return (toYear-fromYear) + 1;
 	}
 
 	/**
