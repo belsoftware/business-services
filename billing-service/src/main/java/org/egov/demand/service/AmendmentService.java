@@ -221,7 +221,7 @@ public class AmendmentService {
 			Object response = serviceRequestRepository.fetchResult(util.getAmendApportionURL(), apportionRequest);
 			ApportionDemandResponse apportionDemandResponse = mapper.convertValue(response,
 					ApportionDemandResponse.class);
-			enrichAdvanceTaxHead(apportionDemandResponse.getDemands());
+			enrichAdvanceTaxHead(apportionDemandResponse.getDemands(),auditDetails);
 
 			demandService.update(new DemandRequest(requestInfo, apportionDemandResponse.getDemands()), null);
 
@@ -237,7 +237,7 @@ public class AmendmentService {
 		}
 	}
 
-	public void enrichAdvanceTaxHead(List<Demand> demands) {
+	public void enrichAdvanceTaxHead(List<Demand> demands,AuditDetails auditDetails) {
 		demands.forEach(demand -> {
 			demand.getDemandDetails().forEach(demandDetail ->  {
 					if (StringUtils.isEmpty(demandDetail.getId())
@@ -245,6 +245,7 @@ public class AmendmentService {
 						demandDetail.setId(UUID.randomUUID().toString());
 						demandDetail.setTenantId(demand.getTenantId());
 						demandDetail.setDemandId(demand.getId());
+						demandDetail.setAuditDetails(auditDetails);
 					}
 				});
 			});
