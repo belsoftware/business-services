@@ -184,13 +184,17 @@ public class TranslationService {
             taxDetail.setAmountPaid(collectedAmount);
             taxDetail.setAmountToBePaid(amountToBePaid);
             
+            BigDecimal amountPaidNeg = negAmounts.subtract(negAdjAmounts);
             //considering negative amounts as amount paid which will be used for apportioning among all the tax heads
             apportionRequestV2.setAmountPaid(negAmounts.subtract(negAdjAmounts).negate());
             List<Bucket> buckets1 = taxDetail.getBuckets();
             for (Bucket bucket : buckets1) {
             	 if( bucket.getTaxHeadCode().contains("ADVANCE")) {
             		 if(negAmounts.compareTo(BigDecimal.ZERO)!=0) {
-            		 bucket.setAmount(negAmounts);
+            			 if(amountPaidNeg.abs().compareTo(bucket.getAmount().abs())>0) {
+                    		 bucket.setAmount(amountPaidNeg);
+            			 }
+            			
             		 if(amountToBePaid.subtract(collectedAmount).compareTo(BigDecimal.ZERO)>0 )
             			if( amountToBePaid.subtract(collectedAmount).compareTo(bucket.getAmount().subtract(bucket.getAdjustedAmount()).abs())>=0) {
             				bucket.setAdjustedAmount(bucket.getAmount());
