@@ -11,11 +11,8 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class ABASDemandRequest {
-	
-	@JsonProperty("checkSum")
-    private String checkSum = null;
+public class ABASPaymentRequest {
 
     @JsonProperty("voucherextsysdto")
-    private ArrayList<ABASDemand> voucherextsysdto = null;
+    private ArrayList<ABASPayment> voucherextsysdto = null;
 }
