@@ -5,7 +5,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.bel.abas.integration.model.PaymentModeEnum;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,4 +40,18 @@ public class AbasIntegUtil {
 		}
 		return sb.toString();
 	}
+	
+	public int getFiscalYear(Calendar calendarDate) {
+        int month = calendarDate.get(Calendar.MONTH);
+        int year = calendarDate.get(Calendar.YEAR);
+        return (month > Calendar.MARCH) ? year : year - 1;
+    }
+	
+	public Map<String, String> abasPaymentModeMap = new HashMap<String, String>(){{
+		put(PaymentModeEnum.CASH.toString(),"C");
+		put(PaymentModeEnum.CHEQUE.toString(),"Q");
+		put(PaymentModeEnum.DD.toString(),"D");
+		put(PaymentModeEnum.ONLINE.toString(),"W");
+		
+	}};
 }

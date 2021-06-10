@@ -55,7 +55,7 @@ public class PaymentListener {
 			abasPayment.setEmailId(payment.getPayerEmail());
 			abasPayment.setUlbCode(abasRepository.getULBCode(payment.getTenantId()));
 			abasPayment.setCreatedBy(payment.getAuditDetails().getCreatedBy());
-			abasPayment.setPayMode(payment.getPaymentMode().toString());
+			//abasPayment.setPayMode(util.abasPaymentModeMap.get(payment.getPaymentMode().toString()));
 			abasPayment.setIfscCode(payment.getIfscCode());
 			abasPayment.setInstrumentNo(payment.getInstrumentNumber());
 			abasPayment.setInstrumentDate(util.sd.format(new Date(payment.getInstrumentDate())));
@@ -63,7 +63,7 @@ public class PaymentListener {
 			abasPayment.setCheckSum(util.bytesToHex(util.digest((abasPayment.getCreatedBy() +"|"+abasPayment.getUlbCode()).getBytes(util.UTF_8))));
 			
 			//
-			int year = getFiscalYear(Calendar.getInstance());
+			//int year = util.getFiscalYear(Calendar.getInstance());
 			ArrayList<ReceiptFeeDetail> abasPaymentDetails = new ArrayList<ReceiptFeeDetail>();
 			for (PaymentDetail paymentDetail : payment.getPaymentDetails()) {
 				for(BillDetail billDetail : paymentDetail.getBill().getBillDetails()) {
@@ -71,7 +71,7 @@ public class PaymentListener {
 						ReceiptFeeDetail receiptFeeDetail = new ReceiptFeeDetail();
 						receiptFeeDetail.setReceiptHead(billAccountDetail.getTaxHeadCode());
 						receiptFeeDetail.setReceptAmount(billAccountDetail.getAmount().toString());
-						receiptFeeDetail.setFinancialYear(year + "-" + (year + 1));
+						//receiptFeeDetail.setFinancialYear(year + "-" + (year + 1));
 						receiptFeeDetail.setDemColCode(null);
 						abasPaymentDetails.add(receiptFeeDetail);
 					}
@@ -81,17 +81,10 @@ public class PaymentListener {
 			abasPayments.add(abasPayment);
 			request.setVoucherextsysdto(abasPayments);
 			String json = new Gson().toJson(request);
-			abasRepository.saveSharedData(json, "BEL");
+			abasRepository.saveSharedData(json, "BEL","PAYMENT_SEND");
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
     }
-    
-    public int getFiscalYear(Calendar calendarDate) {
-        int month = calendarDate.get(Calendar.MONTH);
-        int year = calendarDate.get(Calendar.YEAR);
-        return (month > Calendar.MARCH) ? year : year - 1;
-    }
-
 }

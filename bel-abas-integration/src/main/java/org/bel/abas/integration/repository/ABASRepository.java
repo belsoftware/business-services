@@ -30,10 +30,10 @@ public class ABASRepository {
 	    }
 	}
 
-	public void saveSharedData(String json, String createdBy) {
+	public void saveSharedData(String json, String createdBy, String feature) {
 		try {
-			String insertSQL = "INSERT INTO eg_abas_shared_data (id, createdtime, jsonstring, createdby) VALUES (?, ?, ?, ?)";
-			jdbcTemplate.update(insertSQL, UUID.randomUUID() , new Timestamp(System.currentTimeMillis()) ,json, createdBy);
+			String insertSQL = "INSERT INTO eg_abas_shared_data (id, createdtime, jsonstring, createdby, feature) VALUES (?, ?, ?, ?, ?)";
+			jdbcTemplate.update(insertSQL, UUID.randomUUID() , new Timestamp(System.currentTimeMillis()) ,json, createdBy, feature);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new CustomException("INVALID INPUT", "Error in fethcing data");

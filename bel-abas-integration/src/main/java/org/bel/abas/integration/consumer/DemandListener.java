@@ -50,8 +50,11 @@ public class DemandListener {
     			abasDemand.setVoucherReferenceDate(util.sd.format(new Date(demand.getAuditDetails().getCreatedTime())));
     			abasDemand.setNarration("Demand Voucher for "+demand.getConsumerType());
     			abasDemand.setPayerOrPayee(demand.getPayer().getName());
-    			int year = getFiscalYear(Calendar.getInstance());
-    			abasDemand.setFinancialYear(year + "-" + (year + 1));
+    			//int year = util.getFiscalYear(Calendar.getInstance());
+    			Calendar cal= Calendar.getInstance();
+    			cal.setTimeInMillis(demand.getTaxPeriodFrom());
+    			int year = cal.get(Calendar.YEAR);
+    			abasDemand.setFinancialYear(year+ "-"+ (year+1));
     			abasDemand.setCreatedBy(demand.getPayer().getId().toString());
     			//abasDemand.setCheckSum(util.bytesToHex(util.digest((abasDemands.get(0).getCreatedBy() +"|"+abasDemands.get(0).getUlbCode()).getBytes(util.UTF_8))));
     			ArrayList<ABASDemandDetail> abasDemandDetails = new ArrayList<ABASDemandDetail>();
@@ -67,17 +70,10 @@ public class DemandListener {
     		request.setCheckSum(util.bytesToHex(util.digest((abasDemands.get(0).getCreatedBy() +"|"+abasDemands.get(0).getUlbCode()).getBytes(util.UTF_8))));
     		request.setVoucherextsysdto(abasDemands);
     		String json =new Gson().toJson(request);
-    		abasRepository.saveSharedData(json,"BEL");
+    		abasRepository.saveSharedData(json,"BEL","DEMAND_SEND");
     	}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
     }
-    
-    public int getFiscalYear(Calendar calendarDate) {
-        int month = calendarDate.get(Calendar.MONTH);
-        int year = calendarDate.get(Calendar.YEAR);
-        return (month > Calendar.MARCH) ? year : year - 1;
-    }
-
 }
