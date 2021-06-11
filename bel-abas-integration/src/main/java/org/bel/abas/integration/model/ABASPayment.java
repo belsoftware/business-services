@@ -32,4 +32,6 @@ public class ABASPayment {
 
 	@JsonProperty("receiptFeeDetailList")
 	private ArrayList<ReceiptFeeDetail> receiptFeeDetailList;
+	
+	private String bankName;
 }

@@ -52,6 +52,12 @@ public class AbasIntegUtil {
 		put(PaymentModeEnum.CHEQUE.toString(),"Q");
 		put(PaymentModeEnum.DD.toString(),"D");
 		put(PaymentModeEnum.ONLINE.toString(),"W");
+		put(PaymentModeEnum.CARD.toString(),"W");
+		put(PaymentModeEnum.OFFLINE_NEFT.toString(),"W");
+		put(PaymentModeEnum.OFFLINE_RTGS.toString(),"W");
+		put(PaymentModeEnum.ONLINE_NEFT.toString(),"W");
+		put(PaymentModeEnum.ONLINE_RTGS.toString(),"W");
+		put(PaymentModeEnum.POSTAL_ORDER.toString(),"W");
 		
 	}};
 }
