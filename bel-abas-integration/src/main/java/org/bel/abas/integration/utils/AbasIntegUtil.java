@@ -5,18 +5,42 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.bel.abas.integration.config.ApplicationProperties;
 import org.bel.abas.integration.model.PaymentModeEnum;
+import org.bel.abas.integration.repository.ABASRepository;
+import org.egov.common.contract.request.RequestInfo;
+import org.egov.mdms.model.MasterDetail;
+import org.egov.mdms.model.MdmsCriteria;
+import org.egov.mdms.model.MdmsCriteriaReq;
+import org.egov.mdms.model.ModuleDetail;
+import org.egov.tracer.model.CustomException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
 public class AbasIntegUtil {
+	
+	@Autowired
+	private ApplicationProperties appProps;
+	
+	@Autowired
+	private ABASRepository serviceRequestRepository;
+	
+	public final String BS_TAXHEAD_SERVICE_PATH = "$.MdmsRes.BillingService.TaxHeadMaster.*.service";
+	
+	public final String BS_GLCODE_PATH = "$.MdmsRes.BillingService.GLCode.*.glcode";
 	
 	public SimpleDateFormat sd = new SimpleDateFormat("dd/MM/yyyy");
 	
@@ -60,4 +84,31 @@ public class AbasIntegUtil {
 		put(PaymentModeEnum.POSTAL_ORDER.toString(),"W");
 		
 	}};
+	
+	public MdmsCriteriaReq prepareMdMsRequest(String tenantId, String moduleName, List<String> names, String filter,
+			RequestInfo requestInfo) {
+
+		List<MasterDetail> masterDetails = new ArrayList<>();
+		names.forEach(name -> {
+			masterDetails.add(MasterDetail.builder().name(name).filter(filter).build());
+		});
+
+		ModuleDetail moduleDetail = ModuleDetail.builder().moduleName(moduleName).masterDetails(masterDetails).build();
+		List<ModuleDetail> moduleDetails = new ArrayList<>();
+		moduleDetails.add(moduleDetail);
+		MdmsCriteria mdmsCriteria = MdmsCriteria.builder().tenantId(tenantId).moduleDetails(moduleDetails).build();
+		return MdmsCriteriaReq.builder().requestInfo(requestInfo).mdmsCriteria(mdmsCriteria).build();
+	}
+
+	
+	public DocumentContext getAttributeValues(MdmsCriteriaReq mdmsReq) {
+		StringBuilder uri = new StringBuilder(appProps.getMdmsHost()).append(appProps.getMdmsEndpoint());
+
+		try {
+			return JsonPath.parse(serviceRequestRepository.fetchResult(uri.toString(), mdmsReq));
+		} catch (Exception e) {
+			log.error("Error while fetching MDMS data", e);
+			throw new CustomException("INVALID_INPUT", "Invalid Input Data");
+		}
+	}
 }
