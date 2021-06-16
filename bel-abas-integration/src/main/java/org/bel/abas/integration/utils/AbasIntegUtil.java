@@ -42,6 +42,10 @@ public class AbasIntegUtil {
 	
 	public final String BS_GLCODE_PATH = "$.MdmsRes.BillingService.GLCode.*.glcode";
 	
+	public final String BILLINGSERVICE = "BillingService";
+	public final String TAXHEADMASTER = "TaxHeadMaster";
+	public final String GLCODE = "GLCode";
+	
 	public SimpleDateFormat sd = new SimpleDateFormat("dd/MM/yyyy");
 	
 	public Charset UTF_8 = StandardCharsets.UTF_8;

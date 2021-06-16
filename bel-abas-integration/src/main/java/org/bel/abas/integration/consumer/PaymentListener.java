@@ -52,10 +52,8 @@ public class PaymentListener {
 			ABASPayment abasPayment = new ABASPayment();
 			abasPayment.setReceiptNumber(payment.getPaymentDetails().get(0).getReceiptNumber());
 			abasPayment.setReceiptDate(util.sd.format(new Date(payment.getPaymentDetails().get(0).getReceiptDate())));
-			//abasPayment.setReceiptCategory("M"); 
-			//abasPayment.setVendorName(payment.getPaidBy());
+			abasPayment.setVendorName(payment.getPaidBy());
 			abasPayment.setReceivedFrom(payment.getPaidBy());
-			//abasPayment.setDepartmentName(departmentName);
 			abasPayment.setMobileNumber(payment.getMobileNumber());
 			abasPayment.setEmailId(payment.getPayerEmail());
 			abasPayment.setUlbCode(abasRepository.getULBCode(payment.getTenantId()));
@@ -66,7 +64,6 @@ public class PaymentListener {
 			abasPayment.setInstrumentDate(util.sd.format(new Date(payment.getInstrumentDate())));
 			abasPayment.setNarration("Receipt Voucher for Receipt No. "+payment.getPaymentDetails().get(0).getReceiptNumber());
 			abasPayment.setCheckSum(util.bytesToHex(util.digest((abasPayment.getCreatedBy() +"|"+abasPayment.getUlbCode()).getBytes(util.UTF_8))));
-			
 			
 			int year = util.getFiscalYear(Calendar.getInstance());
 			ArrayList<ReceiptFeeDetail> abasPaymentDetails = new ArrayList<ReceiptFeeDetail>();
@@ -96,17 +93,20 @@ public class PaymentListener {
     
     public String getReceiptHeadFromTaxHead(String taxHeadCode, RequestInfo requestInfo, String tenantId) {
     	try {
-    		MdmsCriteriaReq mdmsReqTaxHead = util.prepareMdMsRequest(tenantId, "BillingService", Arrays.asList("TaxHeadMaster"), "[?(@.code == '"+taxHeadCode+"')]",
+    		MdmsCriteriaReq mdmsReqTaxHead = util.prepareMdMsRequest(tenantId, util.BILLINGSERVICE, Arrays.asList(util.TAXHEADMASTER), "[?(@.code == '"+taxHeadCode+"')]",
     				requestInfo);
     		DocumentContext mdmsDataTaxHead = util.getAttributeValues(mdmsReqTaxHead);
-    		log.info("mdmsData "+mdmsDataTaxHead);
     		List<String> taxHeadServices = mdmsDataTaxHead.read(util.BS_TAXHEAD_SERVICE_PATH);
-    		log.info("taxHeadServices "+taxHeadServices.get(0));
-    		MdmsCriteriaReq mdmsReqGLCode = util.prepareMdMsRequest(tenantId, "BillingService", Arrays.asList("GLCode"), "[?(@.code == '"+taxHeadServices.get(0)+"')]",
-    				requestInfo);
-    		DocumentContext mdmsDataGLCode = util.getAttributeValues(mdmsReqGLCode);
-    		List<String> glCodes = mdmsDataGLCode.read(util.BS_GLCODE_PATH);
-    		return glCodes.get(0);
+    		if(taxHeadServices.size()>0) {
+	    		log.info("taxHeadServices "+taxHeadServices.get(0));
+	    		MdmsCriteriaReq mdmsReqGLCode = util.prepareMdMsRequest(tenantId, util.BILLINGSERVICE, Arrays.asList(util.GLCODE), "[?(@.code == '"+taxHeadServices.get(0)+"')]",
+	    				requestInfo);
+	    		DocumentContext mdmsDataGLCode = util.getAttributeValues(mdmsReqGLCode);
+	    		List<String> glCodes = mdmsDataGLCode.read(util.BS_GLCODE_PATH);
+	    		if(glCodes.size()>0) {
+	    			return glCodes.get(0);
+	    		}
+    		}
     	}
     	catch(Exception e) {
     		e.printStackTrace();

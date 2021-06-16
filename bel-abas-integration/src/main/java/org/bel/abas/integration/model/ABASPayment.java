@@ -14,10 +14,10 @@ import lombok.ToString;
 public class ABASPayment {
 	private String receiptNumber;
 	private String receiptDate;
-	private String receiptCategory;
+	private String receiptCategory="M";
 	private String vendorName;
 	private String receivedFrom;
-	private String departmentName;
+	private String departmentName="AC";
 	private String mobileNumber;
 	private String emailId;
 	private String fieldCode="1-1";
