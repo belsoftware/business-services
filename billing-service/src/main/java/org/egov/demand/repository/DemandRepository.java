@@ -53,11 +53,13 @@ import org.egov.demand.model.AuditDetails;
 import org.egov.demand.model.Demand;
 import org.egov.demand.model.DemandCriteria;
 import org.egov.demand.model.DemandDetail;
+import org.egov.demand.producer.Producer;
 import org.egov.demand.repository.querybuilder.DemandQueryBuilder;
 import org.egov.demand.repository.rowmapper.DemandRowMapper;
 import org.egov.demand.util.Util;
 import org.egov.demand.web.contract.DemandRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -80,6 +82,12 @@ public class DemandRepository {
 	
 	@Autowired
 	private Util util;
+	
+	@Autowired
+	private Producer producer;
+	
+	@Value("${kafka.topics.abas.demand.insert}")
+	private String demandInsertTopic;
 	
 	public List<Demand> getDemands(DemandCriteria demandCriteria) {
 
@@ -117,6 +125,7 @@ public class DemandRepository {
 		insertBatch(demands, demandDetails);
 		log.debug("Demands saved >>>> ");
 		insertBatchForAudit(demands, demandDetails);
+		producer.push(demandInsertTopic, demandRequest);
 	}
 	
 	@Transactional
