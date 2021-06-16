@@ -60,7 +60,7 @@ public class DemandListener {
     			ArrayList<ABASDemandDetail> abasDemandDetails = new ArrayList<ABASDemandDetail>();
     			for(DemandDetail demandDetail : demand.getDemandDetails()) {
     				ABASDemandDetail abasDemandDetail = new ABASDemandDetail();
-    				abasDemandDetail.setAcHeadCode(demandDetail.getTaxHeadMasterCode());
+    				abasDemandDetail.setAcHeadCode(util.getGLCodeFromTaxHead(demandDetail.getTaxHeadMasterCode(), demandRequest.getRequestInfo(), demand.getTenantId()));
     				abasDemandDetail.setVoucherAmount(demandDetail.getTaxAmount());
     				abasDemandDetails.add(abasDemandDetail);
     			}

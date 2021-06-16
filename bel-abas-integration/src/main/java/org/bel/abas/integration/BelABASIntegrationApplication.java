@@ -1,10 +1,11 @@
 package org.bel.abas.integration;
 
+import java.util.TimeZone;
+
 import javax.annotation.PostConstruct;
 
-import org.bel.abas.integration.repository.ABASRepository;
 import org.egov.tracer.config.TracerConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -19,9 +20,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @EnableAutoConfiguration
 @Import({TracerConfiguration.class})
 public class BelABASIntegrationApplication {
-	@Autowired
-	private ABASRepository abasRepository;
-
+	
+	@Value("${app.timezone}")
+    private String timeZone;
+	
 	public static void main(String[] args) {
 		SpringApplication.run(BelABASIntegrationApplication.class, args);
 	}
@@ -36,7 +38,6 @@ public class BelABASIntegrationApplication {
 	
 	@PostConstruct
 	private void start() {
-		System.out.println("in");
-		//abasRepository.saveSharedData("1234555 json", "BEL");
+		TimeZone.setDefault(TimeZone.getTimeZone(timeZone));
 	}
 }

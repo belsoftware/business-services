@@ -6,6 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -115,4 +116,27 @@ public class AbasIntegUtil {
 			throw new CustomException("INVALID_INPUT", "Invalid Input Data");
 		}
 	}
+	
+	public String getGLCodeFromTaxHead(String taxHeadCode, RequestInfo requestInfo, String tenantId) {
+    	try {
+    		MdmsCriteriaReq mdmsReqTaxHead = prepareMdMsRequest(tenantId, BILLINGSERVICE, Arrays.asList(TAXHEADMASTER), "[?(@.code == '"+taxHeadCode+"')]",
+    				requestInfo);
+    		DocumentContext mdmsDataTaxHead = getAttributeValues(mdmsReqTaxHead);
+    		List<String> taxHeadServices = mdmsDataTaxHead.read(BS_TAXHEAD_SERVICE_PATH);
+    		if(taxHeadServices.size()>0) {
+	    		log.info("taxHeadServices "+taxHeadServices.get(0));
+	    		MdmsCriteriaReq mdmsReqGLCode = prepareMdMsRequest(tenantId, BILLINGSERVICE, Arrays.asList(GLCODE), "[?(@.code == '"+taxHeadServices.get(0)+"')]",
+	    				requestInfo);
+	    		DocumentContext mdmsDataGLCode = getAttributeValues(mdmsReqGLCode);
+	    		List<String> glCodes = mdmsDataGLCode.read(BS_GLCODE_PATH);
+	    		if(glCodes.size()>0) {
+	    			return glCodes.get(0);
+	    		}
+    		}
+    	}
+    	catch(Exception e) {
+    		e.printStackTrace();
+    	}
+		return null;
+    }
 }

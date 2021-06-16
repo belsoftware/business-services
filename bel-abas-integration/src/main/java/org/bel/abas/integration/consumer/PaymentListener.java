@@ -1,11 +1,9 @@
 package org.bel.abas.integration.consumer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 import org.bel.abas.integration.contract.PaymentRequest;
 import org.bel.abas.integration.model.ABASPayment;
@@ -17,15 +15,12 @@ import org.bel.abas.integration.model.PaymentDetail;
 import org.bel.abas.integration.model.ReceiptFeeDetail;
 import org.bel.abas.integration.repository.ABASRepository;
 import org.bel.abas.integration.utils.AbasIntegUtil;
-import org.egov.common.contract.request.RequestInfo;
-import org.egov.mdms.model.MdmsCriteriaReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.jayway.jsonpath.DocumentContext;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,7 +66,7 @@ public class PaymentListener {
 				for(BillDetail billDetail : paymentDetail.getBill().getBillDetails()) {
 					for(BillAccountDetail billAccountDetail : billDetail.getBillAccountDetails()) {
 						ReceiptFeeDetail receiptFeeDetail = new ReceiptFeeDetail();
-						receiptFeeDetail.setReceiptHead(getReceiptHeadFromTaxHead(billAccountDetail.getTaxHeadCode(),
+						receiptFeeDetail.setReceiptHead(util.getGLCodeFromTaxHead(billAccountDetail.getTaxHeadCode(),
 								paymentRequest.getRequestInfo(), payment.getTenantId()));
 						receiptFeeDetail.setReceptAmount(billAccountDetail.getAmount().toString());
 						receiptFeeDetail.setFinancialYear(year + "-" + (year + 1));
@@ -90,28 +85,4 @@ public class PaymentListener {
 			e.printStackTrace();
 		}
     }
-    
-    public String getReceiptHeadFromTaxHead(String taxHeadCode, RequestInfo requestInfo, String tenantId) {
-    	try {
-    		MdmsCriteriaReq mdmsReqTaxHead = util.prepareMdMsRequest(tenantId, util.BILLINGSERVICE, Arrays.asList(util.TAXHEADMASTER), "[?(@.code == '"+taxHeadCode+"')]",
-    				requestInfo);
-    		DocumentContext mdmsDataTaxHead = util.getAttributeValues(mdmsReqTaxHead);
-    		List<String> taxHeadServices = mdmsDataTaxHead.read(util.BS_TAXHEAD_SERVICE_PATH);
-    		if(taxHeadServices.size()>0) {
-	    		log.info("taxHeadServices "+taxHeadServices.get(0));
-	    		MdmsCriteriaReq mdmsReqGLCode = util.prepareMdMsRequest(tenantId, util.BILLINGSERVICE, Arrays.asList(util.GLCODE), "[?(@.code == '"+taxHeadServices.get(0)+"')]",
-	    				requestInfo);
-	    		DocumentContext mdmsDataGLCode = util.getAttributeValues(mdmsReqGLCode);
-	    		List<String> glCodes = mdmsDataGLCode.read(util.BS_GLCODE_PATH);
-	    		if(glCodes.size()>0) {
-	    			return glCodes.get(0);
-	    		}
-    		}
-    	}
-    	catch(Exception e) {
-    		e.printStackTrace();
-    	}
-		return null;
-    }
-    
 }
