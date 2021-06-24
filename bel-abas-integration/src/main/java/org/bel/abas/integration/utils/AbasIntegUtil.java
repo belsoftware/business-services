@@ -43,9 +43,12 @@ public class AbasIntegUtil {
 	
 	public final String BS_GLCODE_PATH = "$.MdmsRes.BillingService.GLCode.*.glcode";
 	
+	public final String BS_GLCODES_PATH = "$.MdmsRes.BillingService.GLCodes.*.glcode";
+	
 	public final String BILLINGSERVICE = "BillingService";
 	public final String TAXHEADMASTER = "TaxHeadMaster";
 	public final String GLCODE = "GLCode";
+	public final String GLCODES = "GLCodes";
 	
 	public SimpleDateFormat sd = new SimpleDateFormat("dd/MM/yyyy");
 	
@@ -119,16 +122,12 @@ public class AbasIntegUtil {
 	
 	public String getGLCodeFromTaxHead(String taxHeadCode, RequestInfo requestInfo, String tenantId) {
     	try {
-    		MdmsCriteriaReq mdmsReqTaxHead = prepareMdMsRequest(tenantId, BILLINGSERVICE, Arrays.asList(TAXHEADMASTER), "[?(@.code == '"+taxHeadCode+"')]",
-    				requestInfo);
-    		DocumentContext mdmsDataTaxHead = getAttributeValues(mdmsReqTaxHead);
-    		List<String> taxHeadServices = mdmsDataTaxHead.read(BS_TAXHEAD_SERVICE_PATH);
-    		if(taxHeadServices.size()>0) {
-	    		log.info("taxHeadServices "+taxHeadServices.get(0));
-	    		MdmsCriteriaReq mdmsReqGLCode = prepareMdMsRequest(tenantId, BILLINGSERVICE, Arrays.asList(GLCODE), "[?(@.code == '"+taxHeadServices.get(0)+"')]",
+    		if(null!=taxHeadCode && !taxHeadCode.isEmpty()) {
+	    		log.info("taxHeadCode "+taxHeadCode);
+	    		MdmsCriteriaReq mdmsReqGLCode = prepareMdMsRequest(tenantId, BILLINGSERVICE, Arrays.asList(GLCODES), "[?(@.code == '"+taxHeadCode+"')]",
 	    				requestInfo);
 	    		DocumentContext mdmsDataGLCode = getAttributeValues(mdmsReqGLCode);
-	    		List<String> glCodes = mdmsDataGLCode.read(BS_GLCODE_PATH);
+	    		List<String> glCodes = mdmsDataGLCode.read(BS_GLCODES_PATH);
 	    		if(glCodes.size()>0) {
 	    			return glCodes.get(0);
 	    		}
