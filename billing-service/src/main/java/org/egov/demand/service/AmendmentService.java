@@ -198,9 +198,9 @@ public class AmendmentService {
 					if(demandAmount.compareTo(BigDecimal.ZERO)>0) {
 						if(amendedAmount.abs().compareTo(demandAmount)>0) {
 							demandDetail.setCollectionAmount(demandDetail.getCollectionAmount().add(demandAmount));
-							amenddemandDetail.setCollectionAmount(amenddemandDetail.getCollectionAmount().add(demandAmount).negate());
+							amenddemandDetail.setCollectionAmount(amenddemandDetail.getCollectionAmount().abs().add(demandAmount).negate());
 							totalValue = totalValue.add(amendedAmount);
-							amendedAmount = amendedAmount.subtract(demandAmount);
+							amendedAmount = amendedAmount.abs().subtract(demandAmount).negate();
 							
 						}
 						else {
@@ -218,6 +218,7 @@ public class AmendmentService {
 			demand.getDemandDetails().addAll(amendment.getDemandDetails());
 			DemandApportionRequest apportionRequest = DemandApportionRequest.builder().requestInfo(requestInfo)
 					.demands(demands).tenantId(amendment.getTenantId()).build();
+			System.out.println("apportionRequest:::"+new Gson().toJson(apportionRequest.getDemands()));
 			Object response = serviceRequestRepository.fetchResult(util.getAmendApportionURL(), apportionRequest);
 			ApportionDemandResponse apportionDemandResponse = mapper.convertValue(response,
 					ApportionDemandResponse.class);
