@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -395,26 +395,21 @@ public class AbasIntegController {
 										jsObject.addProperty("code", taxHeadCodes.get(i));
 										if (taxHeadCodes.get(i).contains("_FIELD_FEE"))
 											jsObject.addProperty("glcode", businessGLCodeMap
-													.get("mCollect.Field Fee/Field Verification Fee") == null ? "null"
-															: businessGLCodeMap
-																	.get("mCollect.Field Fee/Field Verification Fee"));
+													.get("mCollect.Field Fee/Field Verification Fee"));
 										else if (taxHeadCodes.get(i).contains("_CGST"))
 											jsObject.addProperty("glcode",
-													businessGLCodeMap.get("mCollect.CGST") == null ? "null"
-															: businessGLCodeMap.get("mCollect.CGST"));
+													businessGLCodeMap.get("mCollect.CGST"));
 										else if (taxHeadCodes.get(i).contains("_SGST"))
 											jsObject.addProperty("glcode",
-													businessGLCodeMap.get("mCollect.SGST") == null ? "null"
-															: businessGLCodeMap.get("mCollect.SGST"));
+													businessGLCodeMap.get("mCollect.SGST"));
 										else if (taxHeadCodes.get(i).contains("_SEC_DEP"))
 											jsObject.addProperty("glcode",
-													businessGLCodeMap.get("mCollect.Security Deposit") == null ? "null"
-															: businessGLCodeMap.get("mCollect.Security Deposit"));
+													businessGLCodeMap.get("mCollect.Security Deposit"));
 										else
 											jsObject.addProperty("glcode", businessGLCodeMap
 													.get(taxHeadBusinessServiceMap.get(taxHeadServices.get(i))));
-										jsObject.addProperty("dept", "null");
-										jsObject.addProperty("fund", "null");
+										jsObject.add("dept", null);
+										jsObject.add("fund", null);
 										jsonArray.add(jsObject);
 									}
 								}
@@ -425,7 +420,7 @@ public class AbasIntegController {
 
 							String finalStr = "{\"tenantId\": \"" + tenantId
 									+ "\",\"moduleName\": \"BillingService\",\"GLCodes\": ";
-							finalStr += new Gson().toJson(jsonArray).replaceAll("\"null\"", "null");
+							finalStr += new GsonBuilder().serializeNulls().create().toJson(jsonArray);
 							finalStr += "}";
 
 							ObjectMapper mapper = new ObjectMapper();

@@ -20,7 +20,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +47,7 @@ public class PaymentListener {
 			ABASPayment abasPayment = new ABASPayment();
 			abasPayment.setReceiptNumber(payment.getPaymentDetails().get(0).getReceiptNumber());
 			abasPayment.setReceiptDate(util.sd.format(new Date(payment.getPaymentDetails().get(0).getReceiptDate())));
-			abasPayment.setVendorName(payment.getPaidBy());
+			//abasPayment.setVendorName(null);
 			abasPayment.setReceivedFrom(payment.getPaidBy());
 			abasPayment.setMobileNumber(payment.getMobileNumber());
 			abasPayment.setEmailId(payment.getPayerEmail());
@@ -70,7 +70,7 @@ public class PaymentListener {
 								paymentRequest.getRequestInfo(), payment.getTenantId()));
 						receiptFeeDetail.setReceptAmount(billAccountDetail.getAmount().toString());
 						receiptFeeDetail.setFinancialYear(year + "-" + (year + 1));
-						receiptFeeDetail.setDemColCode(null);
+						//receiptFeeDetail.setDemColCode(null);
 						abasPaymentDetails.add(receiptFeeDetail);
 					}
 				}
@@ -78,7 +78,7 @@ public class PaymentListener {
 			abasPayment.setReceiptFeeDetailList(abasPaymentDetails);
 			abasPayments.add(abasPayment);
 			request.setVoucherextsysdto(abasPayments);
-			String json = new Gson().toJson(request);
+			String json = new GsonBuilder().serializeNulls().create().toJson(request);
 			abasRepository.saveSharedData(json, "BEL","PAYMENT_SEND");
 		}
 		catch (Exception e) {

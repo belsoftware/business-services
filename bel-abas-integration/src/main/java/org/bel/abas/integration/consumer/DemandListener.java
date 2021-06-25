@@ -18,7 +18,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,7 +69,7 @@ public class DemandListener {
     		}
     		request.setCheckSum(util.bytesToHex(util.digest((abasDemands.get(0).getCreatedBy() +"|"+abasDemands.get(0).getUlbCode()).getBytes(util.UTF_8))));
     		request.setVoucherextsysdto(abasDemands);
-    		String json =new Gson().toJson(request);
+    		String json =new GsonBuilder().serializeNulls().create().toJson(request);
     		abasRepository.saveSharedData(json,"BEL","DEMAND_SEND");
     	}
 		catch (Exception e) {
