@@ -151,6 +151,7 @@ public class ApportionForPT implements ApportionV2 {
 			if(amtDue.compareTo(BigDecimal.ZERO) > 0 && remainingAmount.compareTo(BigDecimal.ZERO)!=0) {
 				for (Bucket bucket : taxDetail.getBuckets()) {
 					if(remainingAmount.compareTo(BigDecimal.ZERO)!=0){
+					if(bucket.getAmount().subtract(bucket.getAdjustedAmount()).compareTo(BigDecimal.ZERO)>0) {
 					if (amtDue.compareTo(remainingAmount) <= 0) {
 						BigDecimal calculatedAmount = amtDue;
 						bucket.setAdjustedAmount(bucket.getAdjustedAmount().add(calculatedAmount));
@@ -162,6 +163,7 @@ public class ApportionForPT implements ApportionV2 {
 						remainingAmount = remainingAmount.subtract(calculatedAmount);
 
 						//appAmt = remainingAmount.subtract(calculatedAmount);
+					}
 					}
 					}
 				}
