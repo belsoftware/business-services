@@ -50,7 +50,8 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
         JsonNode computedFields = chartNode.get(COMPUTED_FIELDS);
         JsonNode excludedFields = chartNode.get(EXCLUDED_COLUMNS);
         String forceFormat = chartNode.get(FORCEFORMAT) != null ? chartNode.get(FORCEFORMAT).asText() : null;
-
+        JsonNode forceFormatColumnWise = chartNode.get(FORCEFORMATCOLUMNWISE) != null ? chartNode.get(FORCEFORMATCOLUMNWISE) : null;
+        
         boolean executeComputedFields = computedFields !=null && computedFields.isArray();
         List<JsonNode> aggrNodes = aggregationNode.findValues(BUCKETS);
         boolean isPathSpecified = chartNode.get(IResponseHandler.AGGS_PATH)!=null && chartNode.get(IResponseHandler.AGGS_PATH).isArray();
@@ -75,10 +76,10 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
 
                 //If aggrPath is specified.
                 if(aggrsPaths.size()>0){
-                    processWithSpecifiedKeys(aggrsPaths, bucket, mappings, key, plotMap, forceFormat);
+                    processWithSpecifiedKeys(aggrsPaths, bucket, mappings, key, plotMap, forceFormat, forceFormatColumnWise);
 
                 } else {
-                    processNestedObjects(bucket, mappings, key, plotMap, forceFormat);
+                    processNestedObjects(bucket, mappings, key, plotMap, forceFormat, forceFormatColumnWise);
                 }
                 
                 if (plotMap.size() > 0) {
@@ -159,10 +160,15 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
      * @param headerName
      * @param plotMap
      */
-    private void process(JsonNode bucketNode, Map<String, Map<String, Plot>> mappings, String key, String headerName, Map<String, Plot> plotMap, String forceFormat){
+    private void process(JsonNode bucketNode, Map<String, Map<String, Plot>> mappings, String key, String headerName, Map<String, Plot> plotMap, String forceFormat, JsonNode forceFormatColumnWise){
         JsonNode valNode = bucketNode.findValue(VALUE) != null ? bucketNode.findValue(VALUE) : bucketNode.findValue(DOC_COUNT);
         Double value = valNode.isDouble() ? valNode.asDouble() : valNode.asInt();
-        String dataType = forceFormat != null ? forceFormat : (valNode.isDouble() ? "amount" : "number"); // to move to config or constants
+        
+        String dataType;
+		if(forceFormatColumnWise!=null && forceFormatColumnWise.has(headerName))
+    		dataType = forceFormatColumnWise.get(headerName).asText();
+    	else
+    		dataType = forceFormat != null ? forceFormat : (valNode.isDouble() ? "amount" : "number"); // to move to config or constants
         //String headerName = bucketNode.findValue(KEY).asText();
         //System.out.println("  headerName:"+headerName+" value:"+value+" dataType:"+dataType);
         Plot plot = new Plot(headerName, value, dataType);
@@ -237,7 +243,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
      * @param key
      * @param plotMap
      */
-    private void processNestedObjects(JsonNode node, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap, String forceFormat ){
+    private void processNestedObjects(JsonNode node, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap, String forceFormat, JsonNode forceFormatColumnWise){
 
         Iterator<String> fieldNames = node.fieldNames();
         while(fieldNames.hasNext()) {
@@ -245,14 +251,14 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
             if(node.get(fieldName).isArray()){
                 ArrayNode bucketNodes = (ArrayNode) node.get(fieldName);
                 bucketNodes.forEach(bucketNode -> {
-                    process(bucketNode, mappings, key, bucketNode.findValue(KEY).asText() , plotMap, forceFormat);
+                    process(bucketNode, mappings, key, bucketNode.findValue(KEY).asText() , plotMap, forceFormat, forceFormatColumnWise);
                 });
 
             } else if(node.get(fieldName).isObject() && node.get(fieldName).get(VALUE)!=null){
-                process(node.get(fieldName), mappings, key, fieldName , plotMap, forceFormat);
+                process(node.get(fieldName), mappings, key, fieldName , plotMap, forceFormat, forceFormatColumnWise);
 
             } else {
-                processNestedObjects(node.get(fieldName), mappings, key, plotMap, forceFormat);
+                processNestedObjects(node.get(fieldName), mappings, key, plotMap, forceFormat, forceFormatColumnWise);
             }
 
         }
@@ -260,7 +266,7 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
 
     }
 
-    private void processWithSpecifiedKeys(ArrayNode aggrsPaths, JsonNode bucket, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap, String forceFormat ){
+    private void processWithSpecifiedKeys(ArrayNode aggrsPaths, JsonNode bucket, Map<String, Map<String, Plot>> mappings, String key, Map<String, Plot> plotMap, String forceFormat, JsonNode forceFormatColumnWise ){
 
         aggrsPaths.forEach(headerPath -> {
         	//System.out.println("Check header "+headerPath);
@@ -270,7 +276,11 @@ public class AdvanceTableChartResponseHandler implements IResponseHandler {
             if(valueNode!=null)
                 doc_value = (null == valueNode.findValue(DOC_COUNT)) ? 0.0 : valueNode.findValue(DOC_COUNT).asDouble();
             Double value = (null == valueNode || null == valueNode.findValue(VALUE)) ? doc_value : valueNode.findValue(VALUE).asDouble();
-            String dataType = (forceFormat!=null)? forceFormat : (valueNode.findValue(VALUE)!=null? (valueNode.findValue(VALUE).isDouble() ? "amount" : "number") : "number");
+            String dataType;
+            	if(forceFormatColumnWise!=null && forceFormatColumnWise.has(headerPath.asText()))
+            		dataType = forceFormatColumnWise.get(headerPath.asText()).asText();
+            	else
+            		dataType = (forceFormat!=null)? forceFormat : (valueNode.findValue(VALUE)!=null? (valueNode.findValue(VALUE).isDouble() ? "amount" : "number") : "number");
             Plot plot = new Plot(headerPath.asText(), value, dataType);
             if (mappings.containsKey(key)) {
                 double newval = mappings.get(key).get(headerPath.asText()) == null ? value : (mappings.get(key).get(headerPath.asText()).getValue() + value);

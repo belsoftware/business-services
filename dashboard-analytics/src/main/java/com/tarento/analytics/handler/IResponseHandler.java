@@ -66,7 +66,8 @@ public interface IResponseHandler {
 	public final String ORDER = "order";
 	public final String ACTION = "action";
 	public final String TYPE_MAPPING = "pathDataTypeMapping";
-	public final String FORCEFORMAT = "forceFormat"; //force the format of data to be 'number','amount','percentage'
+	public final String FORCEFORMAT = "forceFormat"; //force the format of data to be 'number','amount','percentage' on list of columns if provided. Otherwise applied to all columns
+	public final String FORCEFORMATCOLUMNWISE = "forceFormatColumnWise"; //Column wise forcing the type 
 
 	public static String BUCKETS = "buckets";
 	public static String KEY = "key";
