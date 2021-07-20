@@ -1,14 +1,20 @@
 package org.bel.dsssync.service;
 
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bel.dsssync.config.DssSyncConfiguration;
 import org.bel.dsssync.model.SearchCriteria;
 import org.bel.dsssync.web.models.RequestInfoWrapper;
+//import org.egov.infra.indexer.util.IndexerConstants;
+//import org.egov.infra.indexer.web.contract.Index;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,9 +33,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+import io.swagger.util.Json;
+
 
 @Service
 public class DssSyncService {
+
+	public static final String ES_INDEX_HEADER_FORMAT = "{ \"index\" : {\"_id\" : \"%s\" } }%n ";
 
 	@Autowired
 	private DssSyncConfiguration config;
@@ -56,6 +66,10 @@ public class DssSyncService {
 	int sewerageBreakingLimit;
 	int sewerageServiceSearchLimit;
 	int leaseBreakingLimit;
+	int propertyBreakingLimit;
+	int propertyServiceSearchLimit;
+	int pgrBreakingLimit;
+	int pgrServiceSearchLimit;
 	//int offset;// = config.getDssSearchOffset();
 	//int limit;// = config.getDssSearchLimit();
 
@@ -72,6 +86,10 @@ public class DssSyncService {
 		sewerageBreakingLimit = config.getSewerageBreakingLimit();
 		sewerageServiceSearchLimit = config.getSewerageServiceSearchLimit();
 		leaseBreakingLimit = config.getLeaseBreakingLimit();
+		propertyBreakingLimit =config.getPropertyBreakingLimit();
+		propertyServiceSearchLimit = config.getPropertyServiceSearchLimit();
+		pgrBreakingLimit = config.getPgrBreakingLimit();
+		pgrServiceSearchLimit = config.getPgrServiceSearchLimit();
 		//offset = config.getDssSearchOffset();
 		//limit = config.getDssSearchLimit();
 		return;
@@ -402,6 +420,96 @@ public class DssSyncService {
 		return returnRespObj;
 	}
 	
+	public JsonObject migratePGRIndex(SearchCriteria criteria, RequestInfoWrapper requestInfo) {
+		int totalCounter = 0;
+		JsonObject retRespJson = new JsonObject();
+		List<String> reqTenants = requestInfo.getMigrationParams().getTenantIds().size() >0 ? requestInfo.getMigrationParams().getTenantIds() : allTenants;
+		
+		for(String tenantId : reqTenants) {
+			int tenantWiseCounter = 0;
+			for (int j=0; j<pgrBreakingLimit; j+=pgrServiceSearchLimit)
+			{
+				System.out.println("Fetching records from range: "+j+" - "+(j+pgrServiceSearchLimit));
+				String pgrUrl = config.getRainmakerPgrHost()+"rainmaker-pgr/v1/requests/_plainsearch?tenantId="+tenantId+"&offset="+j+"&noOfRecords="+pgrServiceSearchLimit;
+				ResponseEntity<String> pgrResponse = rest.postForEntity(pgrUrl, requestInfo, String.class);
+				String pgrResponseStr = pgrResponse.getBody();
+				JsonElement pgrObj = parser.parse(pgrResponseStr);
+				//System.out.println("check pgrObj "+pgrObj);
+				JsonArray jsonArrayServices = (!pgrObj.getAsJsonObject().get("services").isJsonNull()) ? pgrObj.getAsJsonObject().get("services").getAsJsonArray() : null;;
+				JsonArray jsonArrayActions =(!pgrObj.getAsJsonObject().get("actionHistory").isJsonNull()) ? pgrObj.getAsJsonObject().get("actionHistory").getAsJsonArray() : null;
+				
+				for(int k=0;k<=jsonArrayServices.size()-1; k++)
+				{
+					String locality;
+					String identifier = !jsonArrayServices.get(k).getAsJsonObject().isJsonNull() ? jsonArrayServices.get(k).getAsJsonObject().get("serviceRequestId").getAsString() : "";
+					String tId = !jsonArrayServices.get(k).getAsJsonObject().get("tenantId").isJsonNull() ?  jsonArrayServices.get(k).getAsJsonObject().get("tenantId").getAsString(): "";
+					String serviceCode = !jsonArrayServices.get(k).getAsJsonObject().get("serviceCode").isJsonNull() ? jsonArrayServices.get(k).getAsJsonObject().get("serviceCode").getAsString(): "";
+					String localityCode = (!jsonArrayServices.get(k).getAsJsonObject().isJsonNull() && !jsonArrayServices.get(k).getAsJsonObject().get("addressDetail").getAsJsonObject().isJsonNull())
+									? jsonArrayServices.get(k).getAsJsonObject().get("addressDetail").getAsJsonObject().get("mohalla").getAsString(): "";
+					
+					//System.out.println("check identifier,tId, serviceCode,localityCode"+identifier+" , "+tId+","+serviceCode+","+localityCode);
+					JsonElement tenantData = buildtenantObj(requestInfo,tId);
+					JsonObject transformedJson = new JsonObject();
+					JsonElement jsonArray = (!jsonArrayServices.get(k).getAsJsonObject().isJsonNull()) ? jsonArrayServices.get(k).getAsJsonObject() : null;
+					transformedJson.add("Data", jsonArray.getAsJsonObject());
+					
+					//System.out.println("check transformedJson"+transformedJson);
+					
+					JsonElement jsonArraynew = (!jsonArrayActions.get(k).getAsJsonObject().isJsonNull())? jsonArrayActions.get(k).getAsJsonObject() : null;
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().add("actionHistory", jsonArraynew.getAsJsonObject());
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().add("tenantData", tenantData);
+					
+					Long dateOfComplaint = transformedJson.getAsJsonObject().get("Data").getAsJsonObject().get("auditDetails").getAsJsonObject().get("createdTime").getAsLong();							
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().addProperty("dateOfComplaint",dateOfComplaint);		
+					
+					Date d = new Date(dateOfComplaint);
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+					String timestamp = sdf.format(d);
+					
+					//System.out.println("check timestamp"+timestamp);
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().addProperty("@timestamp",timestamp);	
+					String ar[] = buildDepartmentObj(requestInfo,tId,serviceCode);
+					String department = ar[1];
+					String slaHours = ar[0];
+					long slaHour = Integer.parseInt(slaHours);
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().addProperty("department",department);
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().addProperty("slaHours",slaHour);
+					String finalServiceCode = splitCamelCase(serviceCode);
+					
+					JsonElement wardObj = getWardData(requestInfo, "REVENUE", "locality", localityCode, tId);
+					
+					if(wardObj==null)
+						locality = null;
+					else
+						locality =  wardObj.getAsJsonObject().get("name").getAsString();
+					
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().add("complaintWard", wardObj);
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().get("addressDetail").getAsJsonObject().addProperty("locality",locality);
+					transformedJson.getAsJsonObject().get("Data").getAsJsonObject().addProperty("complainCategory",finalServiceCode);
+					//System.out.println("check transformedJson"+transformedJson);
+					
+					//String id = identifier.replace("/", "%2F");
+					//System.out.println("check identifier"+id);
+
+					putToElasticSearchBulkData(getIndexName("pgrindex-v1",requestInfo), "general", identifier+tId, transformedJson);
+					totalCounter++;
+				}
+				tenantWiseCounter+=jsonArrayServices.size();
+				if(jsonArrayServices.size() < pgrServiceSearchLimit)
+					break;
+			}
+			retRespJson.add(tenantId, new JsonPrimitive(tenantWiseCounter));
+		}
+		retRespJson.add("total", new JsonPrimitive(totalCounter));
+		System.out.println("PGR: Migrated successfully: "+totalCounter+" records. For "+reqTenants.size()+" tenants" + retRespJson);	
+		
+		return retRespJson;
+	}
+	
+	
+	
+	
+				
 	/**
 	 * Difference:
 	 * 		Extra info from WS Service:
@@ -430,8 +538,6 @@ public class DssSyncService {
 				ResponseEntity<String> tlResponse = rest.postForEntity(tlUrl, requestInfo, String.class);
 				String tlResponseStr = tlResponse.getBody();
 				//System.out.println("Response is : "+tlResponseStr);
-				
-				
 				JsonElement tlObj = parser.parse(tlResponseStr);
 				JsonArray jsonArray = tlObj.getAsJsonObject().get("WaterConnection").getAsJsonArray();
 				System.out.println("Returned size is : "+jsonArray.size());
@@ -532,6 +638,103 @@ public class DssSyncService {
 		return retRespJson;
 	}
 	
+	public String buildlocality(RequestInfoWrapper requestInfo, String tenantId)
+	{
+		String Url = config.getLocationServiceHost()+"egov-location/location/v11/boundarys/_search?tenantId="+tenantId;
+		ResponseEntity<String> Response = rest.postForEntity(Url, requestInfo, String.class);
+		String ResponseStr = Response.getBody();
+		JsonElement Obj = parser.parse(ResponseStr);
+		System.out.println("check Obj "+Obj);
+		String locality = Obj.getAsJsonObject().get("TenantBoundary").getAsJsonArray().get(0).getAsJsonObject().get("boundary").getAsJsonArray().get(0).getAsJsonObject().get("name").getAsString();
+		System.out.println("check locality "+locality);
+		return locality;
+	}
+	
+	public String[] buildDepartmentObj(RequestInfoWrapper requestInfo, String tenantId, String serviceCode)
+	{
+		String string = "{\"RequestInfo\":{\"apiId\":\"Rainmaker\",\"ver\":\".01\",\"ts\":\"\",\"action\":\"_search\",\"did\":\"1\",\"key\":\"\",\"msgId\":\"20170310130900|en_IN\",\"authToken\":\"c26bf3ce-7ed0-4e62-86c4-00eaae041fa8\"},\"MdmsCriteria\":{\"tenantId\":\"pb\",\"moduleDetails\":[{\"moduleName\":\"RAINMAKER-PGR\",\"masterDetails\":[{\"name\":\"ServiceDefs\",\"filter\":\"%s\"}]}]}}";
+		String filter = "[?((@.serviceCode == '"+serviceCode+"') && (@.active == true))]";
+		String ar[] = new String[2];
+		//System.out.println("check filter"+filter);
+		String output = String.format(string, filter);
+		JsonParser parser = new JsonParser();
+		JsonObject mdmsCriteria = (JsonObject) parser.parse(output);
+		//System.out.println("check mdms object"+mdmsCriteria);
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		String url = config.getMdmsServiceHost()+"egov-mdms-service/v1/_search";
+		
+		HttpEntity<String> entity = new HttpEntity<String>(output, headers);
+		String responseStr = rest.postForObject(url, entity, String.class);
+		
+		JsonElement json = parser.parse(responseStr);
+		String departmentCode = (!json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("RAINMAKER-PGR").getAsJsonObject().get("ServiceDefs").getAsJsonArray().isJsonNull()) ? json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("RAINMAKER-PGR").getAsJsonObject().get("ServiceDefs").getAsJsonArray().get(0).getAsJsonObject().get("department").getAsString() : "";
+		String slaHours = (!json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("RAINMAKER-PGR").getAsJsonObject().get("ServiceDefs").getAsJsonArray().isJsonNull())? json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("RAINMAKER-PGR").getAsJsonObject().get("ServiceDefs").getAsJsonArray().get(0).getAsJsonObject().get("slaHours").getAsString() : "";
+		//System.out.println("check departmentCode"+departmentCode);
+		ar[0]=slaHours;
+		
+		String string1 = "{\"RequestInfo\":{\"apiId\":\"Rainmaker\",\"ver\":\".01\",\"ts\":\"\",\"action\":\"_search\",\"did\":\"1\",\"key\":\"\",\"msgId\":\"20170310130900|en_IN\",\"authToken\":\"c26bf3ce-7ed0-4e62-86c4-00eaae041fa8\"},\"MdmsCriteria\":{\"tenantId\":\"pb\",\"moduleDetails\":[{\"moduleName\":\"common-masters\",\"masterDetails\":[{\"name\":\"Department\",\"filter\":\"%s\"}]}]}}";
+		String filter1 = "[?(@.code == '"+departmentCode+"')]";
+		//System.out.println("check filter"+filter1);
+		String output1 = String.format(string1, filter1);
+		JsonParser parser1 = new JsonParser();
+		JsonObject mdmsOutput = (JsonObject) parser1.parse(output1);
+		//System.out.println("check mdms object of department"+mdmsOutput);
+		
+		HttpHeaders header = new HttpHeaders();
+		header.setContentType(MediaType.APPLICATION_JSON);
+
+		String url1 = config.getMdmsServiceHost()+"egov-mdms-service/v1/_search";
+		
+		HttpEntity<String> entity1 = new HttpEntity<String>(output1, header);
+		String responseString = rest.postForObject(url1, entity1, String.class);
+		
+		JsonElement jsonObj = parser.parse(responseString);
+		String department = (!jsonObj.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("common-masters").getAsJsonObject().get("Department").getAsJsonArray().isJsonNull()) ? jsonObj.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("common-masters").getAsJsonObject().get("Department").getAsJsonArray().get(0).getAsJsonObject().get("name").getAsString() : "";
+		//System.out.println("check department"+department);
+		ar[1]=department;
+		
+		
+	return ar;
+	}
+	
+	public JsonElement buildtenantObj(RequestInfoWrapper requestInfo, String tenantId)
+	{
+		String string = "{\"RequestInfo\":{\"apiId\":\"Rainmaker\",\"ver\":\".01\",\"ts\":\"\",\"action\":\"_search\",\"did\":\"1\",\"key\":\"\",\"msgId\":\"20170310130900|en_IN\",\"authToken\":\"c26bf3ce-7ed0-4e62-86c4-00eaae041fa8\"},\"MdmsCriteria\":{\"tenantId\":\"pb.agra\",\"moduleDetails\":[{\"moduleName\":\"tenant\",\"masterDetails\":[{\"name\":\"tenants\",\"filter\":\"%s\"}]}]}}";
+		String filter = "[?(@.code == '"+tenantId +"')]";
+		//System.out.println("check filter"+filter);
+		String output = String.format(string, filter);
+		JsonParser parser = new JsonParser();
+	
+		JsonObject mdmsCriteria = (JsonObject) parser.parse(output);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		String url = config.getMdmsServiceHost()+"egov-mdms-service/v1/_search";
+		
+		HttpEntity<String> entity = new HttpEntity<String>(output, headers);
+		String responseStr = rest.postForObject(url, entity, String.class);
+		
+		//ResponseEntity<String> response = rest.postForEntity(url, mdmsCriteria, String.class);
+		//String responseStr = response.getBody();
+		
+		//System.out.println("checked for response from property services:"+ responseStr);
+		JsonElement json = parser.parse(responseStr);
+		
+		JsonElement finalJson = (!json.getAsJsonObject().get("MdmsRes").isJsonNull() && !json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("tenant").isJsonNull()
+				&& !json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("tenant").getAsJsonObject().get("tenants").isJsonNull() && 
+				json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("tenant").getAsJsonObject().get("tenants").getAsJsonArray().size() > 0 ) ?
+						json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("tenant").getAsJsonObject().get("tenants").getAsJsonArray().get(0) : null;
+		
+			//JsonElement finalJson = json.getAsJsonObject().get("MdmsRes").getAsJsonObject().get("tenant").getAsJsonObject().get("tenants").getAsJsonArray().get(0);
+		//System.out.println("check tenants"+finalJson);
+		
+		return finalJson;
+	}
+	
+	
 	public JsonElement buildWaterObj(RequestInfoWrapper requestInfo, JsonObject waterDetails)
 	{
 		
@@ -610,20 +813,65 @@ public class DssSyncService {
 		return "Done";
 	}
 	
-	public JsonObject migratePGRIndex(SearchCriteria criteria, RequestInfoWrapper requestInfo) {
-		return new JsonObject();
-	}
-	
 	public JsonObject migratLeaseIndex(SearchCriteria criteria, RequestInfoWrapper requestInfo) {
 		return new JsonObject();
 	}
+	
+	public String putToElasticSearchBulkData(String indexName, String type, String identifier,  JsonObject jsonObject)
+	{
+		String url = config.getElasticSearch()+indexName+"/"+type+"/"+"_bulk";
+		System.out.println("check url : "+url);
+		StringBuilder finalJson = appendIdToJson(jsonObject, identifier);
+		
+		System.out.println("check finalJson : "+finalJson);
+		try {
+			HttpHeaders headers = new HttpHeaders();
+			headers.setAccept(Arrays.asList(new MediaType[] { MediaType.APPLICATION_JSON }));
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			
+			HttpEntity<String> entityReq = new HttpEntity<String>(finalJson.toString(), headers);
+
+			RestTemplate template = new RestTemplate();
+
+			ResponseEntity<String> response = template
+			    .exchange(url, HttpMethod.POST, entityReq, String.class);
+			
+		
+			if (response.getStatusCode() == HttpStatus.OK) {
+				  System.out.println("Post success to ES : "+identifier);
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return "failed";
+		}
+		return "success";
+			
+		}
+	
+    public StringBuilder appendIdToJson(JsonObject jsonTobeIndexed, String id) {
+        //String id = indexerUtils.buildIndexId(index, stringifiedObject);
+    	StringBuilder finalJson = new StringBuilder();
+        if (StringUtils.isEmpty(id)) {
+            return null;
+        } else {
+            final String actionMetaData = String.format(ES_INDEX_HEADER_FORMAT, "" + id);
+             finalJson.append(actionMetaData);
+             finalJson.append(jsonTobeIndexed).append("\n");
+        }
+
+        return finalJson;
+    }
+		
+	
 	public String putToElasticSearch(String indexName, String type, String identifier,  JsonObject jsonObject)
 	{
 		
 		String url = config.getElasticSearch()+indexName+"/"+type+"/"+identifier;
+		//System.out.println("check url : "+url);
+		
 		try {
-			
-			
 			HttpHeaders headers = new HttpHeaders();
 			headers.setAccept(Arrays.asList(new MediaType[] { MediaType.APPLICATION_JSON }));
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -672,6 +920,7 @@ public class DssSyncService {
 		}
 		return transObj;
 	}
+	
 	
 	public JsonObject getTLDetails(String applicationNumber, String tenantId , RequestInfoWrapper requestInfo)
 	{
@@ -739,7 +988,6 @@ public class DssSyncService {
 			esTypeWaterObj = buildWaterObj(requestInfo, waterObj);
 		else
 			return null;
-		
 		//System.out.println("Check the water object: "+esTypeWaterObj);
 		List specJSON = JsonUtils.classpathToList("/config/dssPayment_ws_one_time.json");//filepathToList("E:\\SrikanthsGitRepo\\municipal-services\\lams-services\\src\\main\\resources\\config\\dssPayment_ws_one_time.json");
 		Chainr chainr = Chainr.fromSpec(specJSON);
@@ -797,6 +1045,7 @@ public class DssSyncService {
 	
 	public JsonElement getWardData(RequestInfoWrapper requestInfo, String hierarchyTypeCode, String locality, String codes, String tenantId)
 	{
+		//System.out.println("Inside ward data");
 		String url = config.getLocationServiceHost()+"egov-location/location/v11/boundarys/_search"+"?hierarchyTypeCode="+hierarchyTypeCode+"&boundaryType="+locality+"&codes="+codes+"&tenantId="+tenantId;
 		String wardData = post(url, requestInfo);
 		JsonElement wardDataResp = parser.parse(wardData);
@@ -804,7 +1053,13 @@ public class DssSyncService {
 				&& !wardDataResp.getAsJsonObject().get("TenantBoundary").getAsJsonArray().get(0).getAsJsonObject().get("boundary").isJsonNull() && 
 					wardDataResp.getAsJsonObject().get("TenantBoundary").getAsJsonArray().get(0).getAsJsonObject().get("boundary").getAsJsonArray().size() > 0 ) ?
 					wardDataResp.getAsJsonObject().get("TenantBoundary").getAsJsonArray().get(0).getAsJsonObject().get("boundary").getAsJsonArray().get(0) : null;
+		
 		return wardDataJson;
+	}
+	
+	public static String splitCamelCase(String s) {
+		return s.replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])",
+				"(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
 	}
 	
 	public String post(String url, RequestInfoWrapper  requestInfo)

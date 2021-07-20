@@ -71,11 +71,20 @@ public class DssSyncConfiguration {
     @Value("${egov.dss.leaseBreakingLimit}")
     private Integer leaseBreakingLimit;
     
+    @Value("${egov.dss.propertyBreakingLimit}")
+    private Integer propertyBreakingLimit;
+    
     @Value("${egov.elasticSearch.path}")
     private String elasticSearch;
 
     @Value("${egov.propertyService.host}")
     private String propertyServiceHost;
+    
+    @Value("${egov.rainmakerPgr.host}")
+    private String rainmakerPgrHost;
+    
+    @Value("${egov.mdmsService.host}")
+    private String mdmsServiceHost;
     
     @Value("${egov.locationService.host}")
     private String locationServiceHost;
@@ -94,6 +103,9 @@ public class DssSyncConfiguration {
     
     @Value("${egov.dss.waterServiceSearchLimit}")
     private Integer waterServiceSearchLimit;
+    
+    @Value("${egov.dss.propertyServiceSearchLimit}")
+    private Integer propertyServiceSearchLimit;
     
     @Value("${egov.dss.collectionsServiceSearchLimit}")
     private Integer collectionsServiceSearchLimit;
